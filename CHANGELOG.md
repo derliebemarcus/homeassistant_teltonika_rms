@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.0-beta6 - 2026-03-16
+
+### New Features
+
+- None.
+
+### Improvements
+
+- None.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- Fixed an issue where port switches were completely ignored for all devices if any single device lacked permission or support for the configurator API endpoint.
+
 ## 0.9.0-beta5 - 2026-03-16
 
 ### New Features

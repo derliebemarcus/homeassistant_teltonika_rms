@@ -252,7 +252,7 @@ class PortScanCoordinator(DataUpdateCoordinator[dict[str, list[dict[str, Any]]]]
                         "reauthenticate to enable Ethernet port entities."
                     )
                     self._scope_warning_logged = True
-                return {}
+                continue
             except RmsApiError:
                 continue
             if ports is not None:
@@ -297,7 +297,7 @@ class PortConfigCoordinator(DataUpdateCoordinator[dict[str, list[dict[str, Any]]
                         "device_configurations:read and reauthenticate to enable PoE switches."
                     )
                     self._scope_warning_logged = True
-                return {}
+                continue
             except RmsApiError:
                 continue
             if ports is not None:
