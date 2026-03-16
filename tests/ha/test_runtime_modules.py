@@ -58,7 +58,7 @@ from teltonika_rms.status_channel import (
     _coerce_payload,
     _is_terminal,
 )
-from teltonika_rms.switch import RmsPoeSwitch
+from teltonika_rms.switch import RmsPoeSwitch, RmsPortSwitch
 from teltonika_rms.switch import async_setup_entry as switch_setup
 from teltonika_rms.update import RmsFirmwareUpdateEntity
 from teltonika_rms.update import async_setup_entry as update_setup
@@ -195,6 +195,7 @@ def test_base_entity_and_platform_entities_expose_values() -> None:
     used_port_names = RmsUsedEthernetPortNamesSensor(bundle, "dev-1")
     reboot = RmsRebootButton(bundle, "dev-1")
     poe = RmsPoeSwitch(bundle, "dev-1", "port1")
+    port_sw = RmsPortSwitch(bundle, "dev-1", "port1")
     firmware_update = RmsFirmwareUpdateEntity(bundle, "dev-1")
     tracker = RmsDeviceTracker(bundle, "dev-1")
 
@@ -218,6 +219,8 @@ def test_base_entity_and_platform_entities_expose_values() -> None:
     assert used_port_names.native_value == "port1"
     assert poe.is_on is True
     assert poe.extra_state_attributes["description"] == "tado"
+    assert port_sw.is_on is True
+    assert port_sw.extra_state_attributes["description"] == "tado"
     assert firmware_update.installed_version == "1.0"
     assert firmware_update.latest_version == "1.1"
     assert reboot.available is True
@@ -348,7 +351,7 @@ def test_platform_setup_entry_adds_expected_entities() -> None:
     assert len(added_binary) == 1
     assert len(added_sensor) == 14
     assert len(added_button) == 1
-    assert len(added_switch) == 2
+    assert len(added_switch) == 5
     assert len(added_update) == 1
     assert len(added_tracker) == 1
 
@@ -375,7 +378,7 @@ def test_sensor_and_update_setup_skip_duplicates_and_optional_entities() -> None
 
     assert not any(isinstance(entity, RmsUsedEthernetPortsSensor) for entity in added_sensor)
     assert not any(isinstance(entity, RmsUsedEthernetPortNamesSensor) for entity in added_sensor)
-    assert len(added_switch) == 2
+    assert len(added_switch) == 5
     assert added_update == []
 
     for listener in (
@@ -389,7 +392,7 @@ def test_sensor_and_update_setup_skip_duplicates_and_optional_entities() -> None
     assert added_update == []
     assert not any(isinstance(entity, RmsUsedEthernetPortsSensor) for entity in added_sensor)
     assert len(added_sensor) == len({entity.unique_id for entity in added_sensor})
-    assert len(added_switch) == 2
+    assert len(added_switch) == 5
     assert len(unloaders) == 7
 
     bundle_with_update = _bundle(_normalized())
@@ -462,6 +465,30 @@ def test_reboot_button_surfaces_scope_error() -> None:
         asyncio.run(button.async_press())
 
 
+def test_port_switch_updates_port_configuration_and_surfaces_scope_error() -> None:
+    calls: list[tuple[str, str, bool]] = []
+    bundle = _bundle(_normalized())
+
+    async def _async_set_device_port_enabled(device_id: str, port_id: str, enabled: bool) -> None:
+        calls.append((device_id, port_id, enabled))
+
+    bundle.api = SimpleNamespace(async_set_device_port_enabled=_async_set_device_port_enabled)
+    switch = RmsPortSwitch(bundle, "dev-1", "port1")
+
+    asyncio.run(switch.async_turn_off())
+    asyncio.run(switch.async_turn_on())
+
+    assert calls == [("dev-1", "port1", False), ("dev-1", "port1", True)]
+    assert bundle.port_config.refresh_calls == 2
+
+    async def _raise_auth(device_id: str, port_id: str, enabled: bool) -> None:
+        raise ConfigEntryAuthFailed("denied")
+
+    bundle.api = SimpleNamespace(async_set_device_port_enabled=_raise_auth)
+    with pytest.raises(HomeAssistantError, match="device_configurations:write"):
+        asyncio.run(switch.async_turn_on())
+
+
 def test_poe_switch_updates_port_configuration_and_surfaces_scope_error() -> None:
     calls: list[tuple[str, str, bool]] = []
     bundle = _bundle(_normalized())
@@ -486,6 +513,15 @@ def test_poe_switch_updates_port_configuration_and_surfaces_scope_error() -> Non
         asyncio.run(switch.async_turn_on())
 
 
+def test_port_switch_handles_missing_port() -> None:
+    bundle = _bundle(_normalized())
+    missing = RmsPortSwitch(bundle, "dev-1", "missing-port")
+
+    assert missing.available is False
+    assert missing.is_on is False
+    assert missing.extra_state_attributes["port_id"] == "missing-port"
+
+
 def test_poe_switch_handles_missing_port_and_setup_skips_invalid_ports() -> None:
     bundle = _bundle(_normalized())
     missing = RmsPoeSwitch(bundle, "dev-1", "missing-port")
@@ -497,7 +533,7 @@ def test_poe_switch_handles_missing_port_and_setup_skips_invalid_ports() -> None
     bundle.port_config.data = {
         "dev-1": [
             {"poe_enable": "1"},
-            {"id": "sfp1", "enabled": "1"},
+            {"enabled": "1"},
         ]
     }
     runtime = TeltonikaRmsRuntime(bundle=bundle)

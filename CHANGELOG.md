@@ -2,6 +2,26 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.0-beta3 - 2026-03-16
+
+### New Features
+
+- Added support for switching ethernet port states on and off.
+- Added support for changing PoE capability.
+
+### Improvements
+
+- None.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- None.
+
+
 ## 0.9.0-beta2 - 2026-03-15
 
 ### New Features

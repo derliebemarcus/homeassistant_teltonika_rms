@@ -253,6 +253,27 @@ class RmsApiClient:
         resolved = await self._resolve_meta_channel(meta, data)
         return _extract_port_configurations(resolved)
 
+    async def async_set_device_port_enabled(self, device_id: str, port_id: str, enabled: bool) -> Any:
+        """Enable or disable one configurable port."""
+        payload = {
+            "configuration": [
+                {
+                    "path": "/ports_settings/config/{id}",
+                    "content_type": "application/json",
+                    "method": "put",
+                    "request_data": {"data": {"enabled": "1" if enabled else "0"}},
+                    "query_parameters": [{"key": "id", "value": port_id}],
+                    "device_id": [_normalize_device_identifier(device_id)],
+                }
+            ]
+        }
+        data, meta = await self.async_request(
+            "POST",
+            _DEVICE_CONFIGURATION_WRITE_PATH,
+            json_body=payload,
+        )
+        return await self._resolve_meta_channel(meta, data)
+
     async def async_set_device_port_poe(self, device_id: str, port_id: str, enabled: bool) -> Any:
         """Enable or disable PoE on one configurable port."""
         payload = {
