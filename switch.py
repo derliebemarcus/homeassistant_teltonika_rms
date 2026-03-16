@@ -81,6 +81,7 @@ async def async_setup_entry(
     _add_new_entities()
     entry.async_on_unload(bundle.inventory.async_add_listener(_add_new_entities))
     entry.async_on_unload(bundle.port_config.async_add_listener(_add_new_entities))
+    entry.async_on_unload(bundle.port_scan.async_add_listener(_add_new_entities))
 
 
 class RmsPoeSwitch(TeltonikaRmsEntity, SwitchEntity):
@@ -206,10 +207,21 @@ class RmsPortSwitch(TeltonikaRmsEntity, SwitchEntity):
 
     @property
     def _port(self) -> dict[str, Any] | None:
+        port_data: dict[str, Any] | None = None
         for port in self._bundle.port_config.data.get(self.device_id, []):
             if str(port.get("id")) == self._port_id:
-                return port
-        return None
+                port_data = port.copy()
+                break
+
+        for scan_port in self._bundle.port_scan.data.get(self.device_id, []):
+            if str(scan_port.get("name") or "").strip() == self._port_id:
+                if port_data is None:
+                    port_data = {"id": self._port_id}
+                if "state" not in port_data:
+                    port_data["state"] = scan_port.get("state")
+                break
+
+        return port_data
 
 
 def _supports_poe(port: dict[str, Any]) -> bool:

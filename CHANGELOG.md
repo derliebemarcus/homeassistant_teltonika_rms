@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.0-beta7 - 2026-03-16
+
+### New Features
+
+- None.
+
+### Improvements
+
+- Added port_scan synchronization to switch.py so that ethernet switches appear correctly via scan data when device configuration APIs are inaccessible.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- Fixed an issue where the correct switch states were not shown if a device returned missing configuration endpoints but succeeded in port-scan data.
+
 ## 0.9.0-beta6 - 2026-03-16
 
 ### New Features

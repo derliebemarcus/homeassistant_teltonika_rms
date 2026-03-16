@@ -393,7 +393,7 @@ def test_sensor_and_update_setup_skip_duplicates_and_optional_entities() -> None
     assert not any(isinstance(entity, RmsUsedEthernetPortsSensor) for entity in added_sensor)
     assert len(added_sensor) == len({entity.unique_id for entity in added_sensor})
     assert len(added_switch) == 5
-    assert len(unloaders) == 7
+    assert len(unloaders) == 8
 
     bundle_with_update = _bundle(_normalized())
     runtime_with_update = TeltonikaRmsRuntime(bundle=bundle_with_update)
@@ -511,6 +511,31 @@ def test_poe_switch_updates_port_configuration_and_surfaces_scope_error() -> Non
     bundle.api = SimpleNamespace(async_set_device_port_poe=_raise_auth)
     with pytest.raises(HomeAssistantError, match="device_configurations:write"):
         asyncio.run(switch.async_turn_on())
+
+
+def test_port_switch_uses_port_scan_state_if_config_missing() -> None:
+    bundle = _bundle(_normalized())
+    bundle.inventory.data["dev-1"] = {"model": "TSW202", "id": "dev-1"}
+    bundle.port_config.data = {}
+    bundle.port_scan.data = {
+        "dev-1": [{"name": "port1", "state": "UP"}, {"name": "port2", "state": "DOWN"}]
+    }
+
+    switch_up = RmsPortSwitch(bundle, "dev-1", "port1")
+    switch_down = RmsPortSwitch(bundle, "dev-1", "port2")
+    switch_missing = RmsPortSwitch(bundle, "dev-1", "port3")
+
+    assert switch_up.available is True
+    assert switch_up.is_on is True
+    assert switch_up._port == {"id": "port1", "state": "UP"}
+
+    assert switch_down.available is True
+    assert switch_down.is_on is False
+    assert switch_down._port == {"id": "port2", "state": "DOWN"}
+
+    assert switch_missing.available is True
+    assert switch_missing.is_on is False
+    assert switch_missing._port is None
 
 
 def test_port_switch_handles_missing_port() -> None:
