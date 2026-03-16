@@ -13,8 +13,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from teltonika_rms import TeltonikaRmsRuntime
-from teltonika_rms.binary_sensor import RmsOnlineBinarySensor
-from teltonika_rms.binary_sensor import async_setup_entry as binary_setup
+from teltonika_rms.binary_sensor import (
+    RmsOnlineBinarySensor,
+    RmsPortLinkBinarySensor,
+)
+from teltonika_rms.binary_sensor import (
+    async_setup_entry as binary_setup,
+)
 from teltonika_rms.button import RmsRebootButton
 from teltonika_rms.button import async_setup_entry as button_setup
 from teltonika_rms.coordinator import (
@@ -45,10 +50,7 @@ from teltonika_rms.sensor import (
     RmsSignalStrengthSensor,
     RmsSimSlotSensor,
     RmsTemperatureSensor,
-    RmsUsedEthernetPortNamesSensor,
-    RmsUsedEthernetPortsSensor,
     RmsWanStateSensor,
-    _connected_devices,
 )
 from teltonika_rms.sensor import (
     async_setup_entry as sensor_setup,
@@ -179,6 +181,7 @@ def test_base_entity_and_platform_entities_expose_values() -> None:
 
     base = TeltonikaRmsEntity(bundle, "dev-1")
     binary = RmsOnlineBinarySensor(bundle, "dev-1")
+    port_link = RmsPortLinkBinarySensor(bundle, "dev-1", "port1")
     model = RmsModelSensor(bundle, "dev-1")
     firmware = RmsFirmwareSensor(bundle, "dev-1")
     serial = RmsSerialSensor(bundle, "dev-1")
@@ -191,8 +194,6 @@ def test_base_entity_and_platform_entities_expose_values() -> None:
     connection_state = RmsConnectionStateSensor(bundle, "dev-1")
     connection_type = RmsConnectionTypeSensor(bundle, "dev-1")
     sim_slot = RmsSimSlotSensor(bundle, "dev-1")
-    used_ports = RmsUsedEthernetPortsSensor(bundle, "dev-1")
-    used_port_names = RmsUsedEthernetPortNamesSensor(bundle, "dev-1")
     reboot = RmsRebootButton(bundle, "dev-1")
     poe = RmsPoeSwitch(bundle, "dev-1", "port1")
     port_sw = RmsPortSwitch(bundle, "dev-1", "port1")
@@ -202,6 +203,7 @@ def test_base_entity_and_platform_entities_expose_values() -> None:
     assert base.available is True
     assert base.device_info is not None
     assert binary.is_on is True
+    assert port_link.is_on is False
     assert model.native_value == "RUTX"
     assert firmware.native_value == "1.0"
     assert serial.native_value == "SERIAL"
@@ -214,9 +216,6 @@ def test_base_entity_and_platform_entities_expose_values() -> None:
     assert connection_state.native_value == "connected"
     assert connection_type.native_value == "LTE"
     assert sim_slot.native_value == 1
-    assert used_ports.native_value == 1
-    assert used_ports.extra_state_attributes["port_names"] == ["port1"]
-    assert used_port_names.native_value == "port1"
     assert poe.is_on is True
     assert poe.extra_state_attributes["description"] == "tado"
     assert port_sw.is_on is True
@@ -264,49 +263,6 @@ def test_new_sensor_and_update_edge_paths() -> None:
     update_with_summary = RmsFirmwareUpdateEntity(bundle, "dev-1")
     assert update_with_summary.release_summary == "Latest: 2.0; Stable: 1.9"
 
-    names = RmsUsedEthernetPortNamesSensor(bundle, "dev-1")
-    assert names.extra_state_attributes == {
-        "ports": [
-            {
-                "id": 0,
-                "name": "port1",
-                "type": "ETH",
-                "connected_device_count": 1,
-                "connected_devices": [{"ip": "192.168.1.5"}],
-            }
-        ]
-    }
-
-    bundle_no_names = _bundle(_normalized())
-    bundle_no_names.port_scan.data = {
-        "dev-1": [
-            {"id": 0, "type": "ETH", "devices": [{"ip": "192.168.1.5"}]},
-            {"id": 1, "name": "port2", "type": "ETH", "devices": []},
-        ]
-    }
-    used_ports = RmsUsedEthernetPortsSensor(bundle_no_names, "dev-1")
-    used_names = RmsUsedEthernetPortNamesSensor(bundle_no_names, "dev-1")
-    assert used_ports.extra_state_attributes == {"port_names": []}
-    assert used_names.available is False
-    assert used_names.native_value is None
-    assert used_names.extra_state_attributes == {
-        "ports": [
-            {
-                "id": 0,
-                "name": None,
-                "type": "ETH",
-                "connected_device_count": 1,
-                "connected_devices": [{"ip": "192.168.1.5"}],
-            }
-        ]
-    }
-
-    bundle_missing_ports = _bundle(_normalized())
-    del bundle_missing_ports.port_scan.data["dev-1"]
-    missing_ports = RmsUsedEthernetPortsSensor(bundle_missing_ports, "dev-1")
-    assert missing_ports.available is False
-    assert missing_ports.native_value is None
-
     unknown_device = RmsModelSensor(bundle, "missing")
     assert unknown_device.native_value is None
 
@@ -327,8 +283,6 @@ def test_new_sensor_and_update_edge_paths() -> None:
     assert RmsFirmwareUpdateEntity.should_create(no_firmware) is False
     assert RmsFirmwareUpdateEntity.should_create(None) is False
 
-    assert _connected_devices({"devices": "bad"}) == []
-
 
 def test_platform_setup_entry_adds_expected_entities() -> None:
     bundle = _bundle(_normalized())
@@ -348,8 +302,8 @@ def test_platform_setup_entry_adds_expected_entities() -> None:
     asyncio.run(update_setup(None, entry, added_update.extend))
     asyncio.run(tracker_setup(None, entry, added_tracker.extend))
 
-    assert len(added_binary) == 1
-    assert len(added_sensor) == 14
+    assert len(added_binary) == 3
+    assert len(added_sensor) == 12
     assert len(added_button) == 1
     assert len(added_switch) == 5
     assert len(added_update) == 1
@@ -376,8 +330,6 @@ def test_sensor_and_update_setup_skip_duplicates_and_optional_entities() -> None
     asyncio.run(switch_setup(None, entry, added_switch.extend))
     asyncio.run(update_setup(None, entry, added_update.extend))
 
-    assert not any(isinstance(entity, RmsUsedEthernetPortsSensor) for entity in added_sensor)
-    assert not any(isinstance(entity, RmsUsedEthernetPortNamesSensor) for entity in added_sensor)
     assert len(added_switch) == 5
     assert added_update == []
 
@@ -390,7 +342,6 @@ def test_sensor_and_update_setup_skip_duplicates_and_optional_entities() -> None
         listener()
 
     assert added_update == []
-    assert not any(isinstance(entity, RmsUsedEthernetPortsSensor) for entity in added_sensor)
     assert len(added_sensor) == len({entity.unique_id for entity in added_sensor})
     assert len(added_switch) == 5
     assert len(unloaders) == 8
@@ -526,11 +477,11 @@ def test_port_switch_uses_port_scan_state_if_config_missing() -> None:
     switch_missing = RmsPortSwitch(bundle, "dev-1", "port3")
 
     assert switch_up.available is True
-    assert switch_up.is_on is True
+    assert switch_up.is_on is None
     assert switch_up._port == {"id": "port1", "state": "UP"}
 
     assert switch_down.available is True
-    assert switch_down.is_on is False
+    assert switch_down.is_on is None
     assert switch_down._port == {"id": "port2", "state": "DOWN"}
 
     assert switch_missing.available is True

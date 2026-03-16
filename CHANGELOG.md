@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.0-beta8 - 2026-03-16
+
+### New Features
+
+- Added a new binary sensor for each ethernet port to indicate the active link status.
+
+### Improvements
+
+- Changed default polling intervals for device state (300 seconds) and inventory (3600 seconds).
+- Made options for device tags, device status filters, and OpenAPI YAML path completely optional.
+- Renamed the generic "Serial" sensor friendly name to "Serial Number".
+
+### Changes
+
+- Removed the "Used Ethernet Ports" and "Used Ethernet Port Names" aggregate sensors in favor of the new individual per-port link binary sensors.
+- If a device lacks the `device_configurations:write` scope or doesn't support the configurator endpoint, attempting to toggle a port switch will surface a clear error and no longer fall back to the physical link state.
+
+### Bugfixes
+
+- Fixed TSW switch entities from falsely reporting an `On` state when the configuration API failed. Switch states now default to `Unknown` (`None`) when their administrative "enabled" state is inaccessible.
+
 ## 0.9.0-beta7 - 2026-03-16
 
 ### New Features

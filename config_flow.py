@@ -203,9 +203,9 @@ class TeltonikaRmsOptionsFlow(OptionsFlow):
                 vol.Required(
                     CONF_ESTIMATED_DEVICES, default=merged[CONF_ESTIMATED_DEVICES]
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=500)),
-                vol.Required(CONF_TAGS, default=merged[CONF_TAGS]): str,
-                vol.Required(CONF_DEVICE_STATUS, default=merged[CONF_DEVICE_STATUS]): str,
-                vol.Required(CONF_SPEC_PATH, default=merged[CONF_SPEC_PATH]): str,
+                vol.Optional(CONF_TAGS, default=merged[CONF_TAGS]): str,
+                vol.Optional(CONF_DEVICE_STATUS, default=merged[CONF_DEVICE_STATUS]): str,
+                vol.Optional(CONF_SPEC_PATH, default=merged[CONF_SPEC_PATH]): str,
                 vol.Required(CONF_ENABLE_LOCATION, default=merged[CONF_ENABLE_LOCATION]): bool,
             }
         )

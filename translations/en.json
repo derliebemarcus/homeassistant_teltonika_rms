@@ -71,7 +71,7 @@
         "name": "Firmware"
       },
       "serial": {
-        "name": "Serial"
+        "name": "Serial Number"
       },
       "last_seen": {
         "name": "Last Seen"

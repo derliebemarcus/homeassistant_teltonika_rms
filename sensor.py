@@ -44,19 +44,7 @@ async def async_setup_entry(
                 RmsConnectionStateSensor,
                 RmsConnectionTypeSensor,
                 RmsSimSlotSensor,
-                RmsUsedEthernetPortsSensor,
-                RmsUsedEthernetPortNamesSensor,
             ):
-                if (
-                    issubclass(entity_cls, _BasePortScanSensor)
-                    and device_id not in bundle.port_scan.data
-                ):
-                    continue
-                if entity_cls is RmsUsedEthernetPortNamesSensor and not any(
-                    port.get("name") and _connected_devices(port)
-                    for port in bundle.port_scan.data.get(device_id, [])
-                ):
-                    continue
                 if not entity_cls.should_create(normalized):
                     continue
                 unique = f"{device_id}_{entity_cls.entity_key}"
@@ -255,93 +243,3 @@ class RmsSimSlotSensor(_OptionalDiagnosticSensor):
         if normalized is None or normalized.sim_slot is None:
             return None
         return int(normalized.sim_slot)
-
-
-class _BasePortScanSensor(TeltonikaRmsEntity, SensorEntity):
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-    entity_key: ClassVar[str]
-
-    def __init__(self, bundle: CoordinatorBundle, device_id: str) -> None:
-        super().__init__(bundle, device_id, coordinator=bundle.port_scan)
-        self._attr_unique_id = f"{device_id}_{self.entity_key}"
-
-    @property
-    def _ports(self) -> list[dict[str, Any]] | None:
-        return self._bundle.port_scan.data.get(self.device_id)
-
-    @property
-    def _used_ports(self) -> list[dict[str, Any]]:
-        ports = self._ports or []
-        return [port for port in ports if _connected_devices(port)]
-
-    @classmethod
-    def should_create(cls, normalized: NormalizedDevice | None) -> bool:
-        return normalized is not None
-
-    @property
-    def available(self) -> bool:
-        return self._ports is not None
-
-
-class RmsUsedEthernetPortsSensor(_BasePortScanSensor):
-    entity_key = "used_ethernet_ports"
-    _attr_name = "Used Ethernet Ports"
-    _attr_icon = "mdi:ethernet"
-
-    @property
-    def native_value(self) -> int | None:
-        ports = self._ports
-        if ports is None:
-            return None
-        return len(self._used_ports)
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        ports = self._used_ports
-        return {
-            "port_names": [str(port.get("name")) for port in ports if port.get("name")],
-        }
-
-
-class RmsUsedEthernetPortNamesSensor(_BasePortScanSensor):
-    entity_key = "used_ethernet_port_names"
-    _attr_name = "Used Ethernet Port Names"
-    _attr_icon = "mdi:ethernet-cable"
-
-    @classmethod
-    def should_create(cls, normalized: NormalizedDevice | None) -> bool:
-        return normalized is not None
-
-    @property
-    def available(self) -> bool:
-        ports = self._ports
-        return ports is not None and any(port.get("name") for port in self._used_ports)
-
-    @property
-    def native_value(self) -> str | None:
-        names = [str(port.get("name")) for port in self._used_ports if port.get("name")]
-        if not names:
-            return None
-        return ", ".join(names)
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        ports = []
-        for port in self._used_ports:
-            ports.append(
-                {
-                    "id": port.get("id"),
-                    "name": port.get("name"),
-                    "type": port.get("type"),
-                    "connected_device_count": len(_connected_devices(port)),
-                    "connected_devices": _connected_devices(port),
-                }
-            )
-        return {"ports": ports}
-
-
-def _connected_devices(port: dict[str, Any]) -> list[dict[str, Any]]:
-    devices = port.get("devices")
-    if not isinstance(devices, list):
-        return []
-    return [device for device in devices if isinstance(device, dict)]

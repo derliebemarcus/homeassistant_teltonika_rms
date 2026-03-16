@@ -163,7 +163,7 @@ class RmsPortSwitch(TeltonikaRmsEntity, SwitchEntity):
         return _supports_port(self._port) or is_switch_device
 
     @property
-    def is_on(self) -> bool:
+    def is_on(self) -> bool | None:
         port = self._port
         if port is None:
             return False
@@ -171,10 +171,7 @@ class RmsPortSwitch(TeltonikaRmsEntity, SwitchEntity):
         val = port.get("enabled")
         if val is not None:
             return str(val) == "1"
-        val = port.get("state")
-        if val is not None:
-            return str(val) == "1" or str(val).lower() == "up"
-        return True
+        return None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -200,8 +197,8 @@ class RmsPortSwitch(TeltonikaRmsEntity, SwitchEntity):
             )
         except ConfigEntryAuthFailed as err:
             raise HomeAssistantError(
-                "RMS port control requires device_configurations:write permissions. "
-                "Reauthenticate and try again."
+                "RMS port control failed. This requires device_configurations:write permissions "
+                "and the device model must support RMS port configuration."
             ) from err
         await self._bundle.port_config.async_request_refresh()
 
