@@ -26,21 +26,37 @@ async def async_setup_entry(
     @callback
     def _add_new_entities() -> None:
         new_entities: list[BinarySensorEntity] = []
-        for device_id in bundle.inventory.data:
+        for device_id, device_info in bundle.inventory.data.items():
             unique = f"{device_id}_online"
             if unique not in known:
                 known.add(unique)
                 new_entities.append(RmsOnlineBinarySensor(bundle, device_id))
 
+            port_configs = {
+                str(p.get("id")): p
+                for p in bundle.port_config.data.get(device_id, [])
+                if p.get("id")
+            }
+
+            model = device_info.get("model", "UNKNOWN")
+            is_switch_device = model.startswith("TSW") or model.startswith("SWM")
+
+            if is_switch_device and not port_configs:
+                for i in range(1, 9):
+                    port_configs[f"port{i}"] = {"id": f"port{i}"}
+                for i in range(1, 3):
+                    port_configs[f"sfp{i}"] = {"id": f"sfp{i}"}
+
             for port in bundle.port_scan.data.get(device_id, []):
                 port_id = str(port.get("name") or "").strip()
-                if not port_id:
-                    continue
+                if port_id and port_id not in port_configs:
+                    port_configs[port_id] = {"id": port_id}
+
+            for port_id in port_configs:
                 unique_port = f"{device_id}_{port_id}_link"
                 if unique_port not in known:
                     known.add(unique_port)
                     new_entities.append(RmsPortLinkBinarySensor(bundle, device_id, port_id))
-
         if new_entities:
             async_add_entities(new_entities)
 
@@ -87,14 +103,14 @@ class RmsPortLinkBinarySensor(TeltonikaRmsEntity, BinarySensorEntity):
 
     @property
     def available(self) -> bool:
-        return super().available and self._port is not None
+        return super().available
 
     @property
     def is_on(self) -> bool | None:
         port = self._port
         if port is None:
-            return None
+            return False
         state = port.get("state")
         if state is not None:
             return str(state).lower() == "up"
-        return False
+        return True

@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.0-beta9 - 2026-03-16
+
+### New Features
+
+- None.
+
+### Improvements
+
+- None.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- Fixed disconnected port links and switches completely missing from Home Assistant for TSW and SWM devices. The integration now intelligently auto-populates `port1` to `port8` and `sfp1` to `sfp2` when they are unlisted by the Teltonika RMS API payload.
+
 ## 0.9.0-beta8 - 2026-03-16
 
 ### New Features

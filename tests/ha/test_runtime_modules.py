@@ -203,7 +203,7 @@ def test_base_entity_and_platform_entities_expose_values() -> None:
     assert base.available is True
     assert base.device_info is not None
     assert binary.is_on is True
-    assert port_link.is_on is False
+    assert port_link.is_on is True
     assert model.native_value == "RUTX"
     assert firmware.native_value == "1.0"
     assert serial.native_value == "SERIAL"
@@ -284,6 +284,33 @@ def test_new_sensor_and_update_edge_paths() -> None:
     assert RmsFirmwareUpdateEntity.should_create(None) is False
 
 
+def test_switch_device_generates_fallback_ports() -> None:
+    bundle = _bundle(_normalized())
+    bundle.inventory.data["dev-1"] = {"model": "TSW202", "id": "dev-1"}
+    bundle.port_config.data = {}
+    bundle.port_scan.data = {}
+
+    added_binary: list[Any] = []
+    added_switch: list[Any] = []
+    entry = SimpleNamespace(
+        runtime_data=TeltonikaRmsRuntime(bundle=bundle), async_on_unload=lambda cb: None
+    )
+
+    asyncio.run(binary_setup(None, entry, added_binary.extend))
+    asyncio.run(switch_setup(None, entry, added_switch.extend))
+
+    # Expect 1 online sensor + 8 ethernet ports + 2 sfp ports = 11 binary sensors
+    assert len(added_binary) == 11
+    # Expect 8 ethernet ports + 2 sfp ports = 10 switches
+    assert len(added_switch) == 10
+
+    # Pick an auto-generated port and ensure it is off (disconnected)
+    sfp1 = next((s for s in added_binary if s._attr_unique_id == "dev-1_sfp1_link"), None)
+    assert sfp1 is not None
+    assert sfp1.available is True
+    assert sfp1.is_on is False
+
+
 def test_platform_setup_entry_adds_expected_entities() -> None:
     bundle = _bundle(_normalized())
     runtime = TeltonikaRmsRuntime(bundle=bundle)
@@ -302,7 +329,7 @@ def test_platform_setup_entry_adds_expected_entities() -> None:
     asyncio.run(update_setup(None, entry, added_update.extend))
     asyncio.run(tracker_setup(None, entry, added_tracker.extend))
 
-    assert len(added_binary) == 3
+    assert len(added_binary) == 4
     assert len(added_sensor) == 12
     assert len(added_button) == 1
     assert len(added_switch) == 5

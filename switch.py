@@ -42,6 +42,12 @@ async def async_setup_entry(
                 if p.get("id")
             }
 
+            if is_switch_device and not port_configs:
+                for i in range(1, 9):
+                    port_configs[f"port{i}"] = {"id": f"port{i}"}
+                for i in range(1, 3):
+                    port_configs[f"sfp{i}"] = {"id": f"sfp{i}"}
+
             for scan_port in bundle.port_scan.data.get(device_id, []):
                 port_name = str(scan_port.get("name") or "").strip()
                 if port_name and port_name not in port_configs:
