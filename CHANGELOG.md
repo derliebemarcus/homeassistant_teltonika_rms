@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.0-beta5 - 2026-03-16
+
+### New Features
+
+- None.
+
+### Improvements
+
+- Added debug logging for switch creation and port discovery.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- Fixed ethernet switches not appearing for TSW and SWM devices.
+
 ## 0.9.0-beta4 - 2026-03-16
 
 ### New Features

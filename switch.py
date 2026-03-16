@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
@@ -14,6 +15,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import TeltonikaRmsRuntime
 from .coordinator import CoordinatorBundle
 from .entity import TeltonikaRmsEntity
+
+LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -29,8 +32,33 @@ async def async_setup_entry(
     @callback
     def _add_new_entities() -> None:
         new_entities: list[SwitchEntity] = []
-        for device_id in bundle.inventory.data:
-            for port in bundle.port_config.data.get(device_id, []):
+        for device_id, device_info in bundle.inventory.data.items():
+            model = device_info.get("model", "UNKNOWN")
+            is_switch_device = model.startswith("TSW") or model.startswith("SWM")
+
+            port_configs = {
+                str(p.get("id")): p
+                for p in bundle.port_config.data.get(device_id, [])
+                if p.get("id")
+            }
+
+            for scan_port in bundle.port_scan.data.get(device_id, []):
+                port_name = str(scan_port.get("name") or "").strip()
+                if port_name and port_name not in port_configs:
+                    port_configs[port_name] = {"id": port_name}
+
+            ports = list(port_configs.values())
+
+            LOGGER.debug(
+                "Device detected: %s (Model: %s, Is Switch: %s). Found %d port configurations.",
+                device_id,
+                model,
+                is_switch_device,
+                len(ports),
+            )
+
+            for port in ports:
+                LOGGER.debug("Device %s configuring port: %s", device_id, port)
                 port_id = str(port.get("id") or "").strip()
                 if not port_id:
                     continue
@@ -41,7 +69,7 @@ async def async_setup_entry(
                         known.add(unique_poe)
                         new_entities.append(RmsPoeSwitch(bundle, device_id, port_id))
 
-                if _supports_port(port):
+                if _supports_port(port) or is_switch_device:
                     unique_port = f"{device_id}_{port_id}_port"
                     if unique_port not in known:
                         known.add(unique_port)
@@ -125,12 +153,27 @@ class RmsPortSwitch(TeltonikaRmsEntity, SwitchEntity):
 
     @property
     def available(self) -> bool:
-        return super().available and self._port is not None and _supports_port(self._port)
+        if not super().available:
+            return False
+        model = self._bundle.inventory.data.get(self.device_id, {}).get("model", "")
+        is_switch_device = model.startswith("TSW") or model.startswith("SWM")
+        if self._port is None:
+            return is_switch_device
+        return _supports_port(self._port) or is_switch_device
 
     @property
     def is_on(self) -> bool:
         port = self._port
-        return port is not None and str(port.get("enabled")) == "1"
+        if port is None:
+            return False
+
+        val = port.get("enabled")
+        if val is not None:
+            return str(val) == "1"
+        val = port.get("state")
+        if val is not None:
+            return str(val) == "1" or str(val).lower() == "up"
+        return True
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
