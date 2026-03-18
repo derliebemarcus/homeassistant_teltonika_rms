@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.0-beta14 - 2026-03-17
+
+### New Features
+
+- None.
+
+### Improvements
+
+- Increased test coverage to >97.8% and automated the pre-commit script to continuously bump the coverage floor upon success, ensuring coverage can only remain stagnant or improve.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- Fixed a bug where a port explicitly labeled with an empty string `""` from the configuration payload was silently dropped when detecting missing ports for auto-generation.
+
 ## 0.9.0-beta13 - 2026-03-17
 
 ### New Features

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Fail when coverage.xml is below the required percentage threshold."""
+"""Fail when coverage.xml is below the required percentage threshold.
+Automatically bumps the threshold in .githooks/pre-commit if coverage increases."""
 
 from __future__ import annotations
 
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -32,6 +34,20 @@ def main() -> int:
         return 1
 
     print(f"Coverage check passed: {actual:.2f}% >= {minimum:.2f}%.")
+
+    if actual > minimum:
+        pre_commit_path = Path(".githooks/pre-commit")
+        if pre_commit_path.exists():
+            content = pre_commit_path.read_text()
+            new_content = re.sub(
+                r'COVERAGE_MINIMUM="[\d\.]+"',
+                f'COVERAGE_MINIMUM="{actual:.2f}"',
+                content,
+            )
+            if content != new_content:
+                pre_commit_path.write_text(new_content)
+                print(f"Bumped COVERAGE_MINIMUM to {actual:.2f} in .githooks/pre-commit")
+
     return 0
 
 

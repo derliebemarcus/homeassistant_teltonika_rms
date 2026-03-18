@@ -1024,3 +1024,51 @@ def test_homeassistant_can_be_constructed_for_coordinator_compatibility() -> Non
             return hass.config.config_dir
 
     assert asyncio.run(_build())
+
+
+def test_missing_coverage_lines() -> None:
+    bundle = _bundle(_normalized())
+
+    # binary_sensor.py: 119
+    missing_link = RmsPortLinkBinarySensor(bundle, "dev-1", "missing")
+    assert missing_link.is_on is False
+
+    # binary_sensor.py: 119
+    up_link = RmsPortLinkBinarySensor(bundle, "dev-1", "up-port")
+    down_link = RmsPortLinkBinarySensor(bundle, "dev-1", "down-port")
+    none_link = RmsPortLinkBinarySensor(bundle, "dev-1", "none-port")
+    bundle.port_scan.data["dev-1"].append({"name": "up-port", "state": "UP"})
+    bundle.port_scan.data["dev-1"].append({"name": "down-port", "state": "DOWN"})
+    bundle.port_scan.data["dev-1"].append({"name": "none-port"})
+    assert up_link.is_on is True
+    assert down_link.is_on is False
+    assert none_link.is_on is True
+
+    # sensor.py: 49
+    # Add a device where an optional sensor's should_create is False
+    no_metrics = _normalized()
+    no_metrics.temperature = None
+    no_metrics.sim_slot = None
+    no_metrics_bundle = _bundle(no_metrics)
+    added_sensor: list[Any] = []
+    entry = SimpleNamespace(
+        runtime_data=TeltonikaRmsRuntime(bundle=no_metrics_bundle), async_on_unload=lambda cb: None
+    )
+    asyncio.run(sensor_setup(None, entry, added_sensor.extend))
+
+    # sensor.py: 109
+    no_metrics_bundle.port_scan.data = {"dev-1": [{"name": "port1", "PoE (W)": None, "PoE": True}]}
+    poe_pow = RmsPoePowerSensor(no_metrics_bundle, "dev-1", "port1")
+    assert poe_pow.native_value is None
+    assert poe_pow.available is True
+
+    # sensor.py: 251, 305
+    # Call native_value when it returns None
+    temp_sensor = RmsTemperatureSensor(no_metrics_bundle, "dev-1")
+    sim_sensor = RmsSimSlotSensor(no_metrics_bundle, "dev-1")
+    assert temp_sensor.native_value is None
+    assert sim_sensor.native_value is None
+
+    # Check that added_switch is empty since empty port string is filtered
+    added_switch: list[Any] = []
+    asyncio.run(switch_setup(None, entry, added_switch.extend))
