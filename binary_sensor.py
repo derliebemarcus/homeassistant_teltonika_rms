@@ -56,12 +56,11 @@ async def async_setup_entry(
 
             for port_id in list(port_configs.keys()):
                 if port_id == "NIL":
-                    port_configs.pop(port_id)
-                else:
-                    unique_port = f"{device_id}_{port_id}_link"
-                    if unique_port not in known:
-                        known.add(unique_port)
-                        new_entities.append(RmsPortLinkBinarySensor(bundle, device_id, port_id))
+                    continue
+                unique_port = f"{device_id}_{port_id}_link"
+                if unique_port not in known:
+                    known.add(unique_port)
+                    new_entities.append(RmsPortLinkBinarySensor(bundle, device_id, port_id))
         if new_entities:
             async_add_entities(new_entities)
 

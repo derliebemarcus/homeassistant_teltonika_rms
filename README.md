@@ -17,8 +17,8 @@ The integration connects to the RMS API, discovers your devices, and creates Hom
 ## What This Component Provides
 
 - Per-device entities:
-  - `binary_sensor`: online connectivity
-  - `sensor`: model, firmware, serial, last seen timestamp
+  - `binary_sensor`: online connectivity, and individual link state per Ethernet port
+  - `sensor`: model, firmware, serial number, last seen timestamp
   - additional `sensor` entities when RMS provides the data:
     - clients count
     - router uptime
@@ -28,11 +28,10 @@ The integration connects to the RMS API, discovers your devices, and creates Hom
     - connection state
     - connection type
     - SIM slot
-    - used Ethernet ports
-    - used Ethernet port names
+    - PoE power consumption (W) per PoE-capable port
   - `button`: per-device reboot action
   - `switch`: per-port PoE switches when RMS exposes configurable PoE-enabled switch ports
-  - `update`: firmware availability view with installed and latest RMS firmware versions
+  - `update`: firmware availability view with installed and latest stable RMS firmware versions
   - `device_tracker` (optional): GPS location only for devices that provide coordinates, including detailed location attributes (`location_detail`, `coordinates`, `google_maps_url`)
 - Service:
   - `teltonika_rms.refresh` to trigger immediate refresh
@@ -42,7 +41,7 @@ The integration connects to the RMS API, discovers your devices, and creates Hom
 - Device polling with request-budget safeguards (RMS monthly quota aware)
 - API envelope parsing (`success`, `data`, `errors`, `meta`)
 - Status-channel handling (`meta.channel`) with Socket.IO first, HTTP polling fallback
-- Low-frequency Ethernet port scans to surface which ports are in use and which named ports currently have connected devices
+- Low-frequency Ethernet port scans to surface which ports are in use
 - Low-frequency port-configuration reads to expose PoE switch control only on ports that actually support it
 
 ## Installation

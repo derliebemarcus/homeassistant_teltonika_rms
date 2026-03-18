@@ -35,6 +35,12 @@ async def async_setup_entry(
         for device_id, device_info in bundle.inventory.data.items():
             model = device_info.get("model", "UNKNOWN")
             is_switch_device = model.startswith("TSW") or model.startswith("SWM")
+            is_poe_capable_series = model.startswith(("OTD", "SWM", "TSW")) or (
+                model.startswith("RUT") and not model.startswith(("RUTX", "RUTM"))
+            )
+
+            if not is_poe_capable_series:
+                continue
 
             port_configs = {
                 str(p.get("id")): p
@@ -77,12 +83,6 @@ async def async_setup_entry(
                         known.add(unique_poe)
                         new_entities.append(RmsPoeSwitch(bundle, device_id, port_id))
 
-                if _supports_port(port) or is_switch_device:
-                    unique_port = f"{device_id}_{port_id}_port"
-                    if unique_port not in known:
-                        known.add(unique_port)
-                        new_entities.append(RmsPortSwitch(bundle, device_id, port_id))
-
         if new_entities:
             async_add_entities(new_entities)
 
@@ -124,6 +124,13 @@ class RmsPoeSwitch(TeltonikaRmsEntity, SwitchEntity):
         if val_poe is not None:
             return str(val_poe) in ("1", "true", "True")
 
+        val_poe_w = port.get("PoE (W)")
+        if val_poe_w is not None:
+            try:
+                return float(val_poe_w) > 0.0
+            except (TypeError, ValueError):
+                return False
+
         return False
 
     @property
@@ -162,91 +169,10 @@ class RmsPoeSwitch(TeltonikaRmsEntity, SwitchEntity):
         return None
 
 
-class RmsPortSwitch(TeltonikaRmsEntity, SwitchEntity):
-    """Switch that controls port enabled state on one RMS switch port."""
-
-    _attr_icon = "mdi:ethernet"
-    _attr_entity_category = EntityCategory.CONFIG
-
-    def __init__(self, bundle: CoordinatorBundle, device_id: str, port_id: str) -> None:
-        super().__init__(bundle, device_id, coordinator=bundle.port_config)
-        self._port_id = port_id
-        self._attr_unique_id = f"{device_id}_{port_id}_port"
-        self._attr_name = f"{port_id.upper()}"
-
-    @property
-    def available(self) -> bool:
-        if not super().available:
-            return False
-        model = self._bundle.inventory.data.get(self.device_id, {}).get("model", "")
-        is_switch_device = model.startswith("TSW") or model.startswith("SWM")
-        if self._port is None:
-            return is_switch_device
-        return _supports_port(self._port) or is_switch_device
-
-    @property
-    def is_on(self) -> bool:
-        port = self._port
-        if port is None:
-            return True
-
-        val = port.get("enabled")
-        if val is not None:
-            return str(val) in ("1", "true", "True")
-        return True
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        port = self._port or {}
-        return {
-            "port_id": self._port_id,
-            "description": port.get("description"),
-            "poe_enable": port.get("poe_enable"),
-            "autoneg": port.get("autoneg"),
-            "isolated": port.get("isolated"),
-        }
-
-    async def async_turn_on(self, **kwargs: Any) -> None:
-        await self._async_set_port(True)
-
-    async def async_turn_off(self, **kwargs: Any) -> None:
-        await self._async_set_port(False)
-
-    async def _async_set_port(self, enabled: bool) -> None:
-        try:
-            await self._bundle.api.async_set_device_port_enabled(
-                self.device_id, self._port_id, enabled
-            )
-        except ConfigEntryAuthFailed as err:
-            raise HomeAssistantError(
-                "RMS port control failed. The device model may not support RMS remote port configuration, "
-                "or you may need to reauthenticate your Home Assistant integration to activate the "
-                "device_configurations:write permission."
-            ) from err
-        await self._bundle.port_config.async_request_refresh()
-
-    @property
-    def _port(self) -> dict[str, Any] | None:
-        port_data: dict[str, Any] | None = None
-        for port in self._bundle.port_config.data.get(self.device_id, []):
-            if str(port.get("id")) == self._port_id:
-                port_data = port.copy()
-                break
-
-        for scan_port in self._bundle.port_scan.data.get(self.device_id, []):
-            if str(scan_port.get("name") or "").strip() == self._port_id:
-                if port_data is None:
-                    port_data = {"id": self._port_id}
-                if "state" not in port_data:
-                    port_data["state"] = scan_port.get("state")
-                break
-
-        return port_data
-
-
 def _supports_poe(port: dict[str, Any]) -> bool:
-    return "poe_enable" in port or port.get("PoE") is not None or port.get("poe") is not None
-
-
-def _supports_port(port: dict[str, Any]) -> bool:
-    return "enabled" in port
+    return (
+        "poe_enable" in port
+        or port.get("PoE") is not None
+        or port.get("poe") is not None
+        or port.get("PoE (W)") is not None
+    )

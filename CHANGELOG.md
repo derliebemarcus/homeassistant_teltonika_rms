@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.0-beta13 - 2026-03-17
+
+### New Features
+
+- Restored the exact `binary_sensor` and auto-generation naming logic from `v0.9.0-beta9` based on user feedback.
+- Restricted the creation of PoE Power sensors and PoE Switches strictly to supported device series (`OTD`, `SWM`, `TSW`, and `RUT` excluding `RUTX` and `RUTM`).
+
+### Improvements
+
+- Expanded the pre-commit configuration to completely replicate all remote GitHub Actions security and quality checks locally, ensuring maximum test parity before committing.
+
+### Changes
+
+- Removed regular administrative port `switch` entities per user feedback.
+
+### Bugfixes
+
+- Fixed PoE power and state extraction missing due to case-sensitivity and unhandled `PoE (W)` properties for certain switch models.
+
 ## 0.9.0-beta12 - 2026-03-17
 
 ### New Features

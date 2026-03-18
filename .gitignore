@@ -31,3 +31,5 @@ htmlcov/
 
 # External information directories
 additional_input/
+
+AGENTS.md

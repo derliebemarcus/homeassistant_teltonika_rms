@@ -29,7 +29,7 @@ async def async_setup_entry(
     @callback
     def _add_new_entities() -> None:
         new_entities: list[SensorEntity] = []
-        for device_id in bundle.inventory.data:
+        for device_id, device_info in bundle.inventory.data.items():
             normalized = bundle.merged_device(device_id)
             for entity_cls in (
                 RmsModelSensor,
@@ -52,19 +52,26 @@ async def async_setup_entry(
                     continue
                 known.add(unique)
                 new_entities.append(entity_cls(bundle, device_id))
-            for port in bundle.port_scan.data.get(device_id, []):
-                port_id = str(port.get("name") or "").strip()
-                if port_id == "NIL" or not port_id:
-                    continue
-                if (
-                    port.get("PoE") is not None
-                    or port.get("poe") is not None
-                    or port.get("poe_enable") is not None
-                ):
-                    unique_poe_power = f"{device_id}_{port_id}_poe_w"
-                    if unique_poe_power not in known:
-                        known.add(unique_poe_power)
-                        new_entities.append(RmsPoePowerSensor(bundle, device_id, port_id))
+            model = device_info.get("model", "UNKNOWN")
+            is_poe_capable_series = model.startswith(("OTD", "SWM", "TSW")) or (
+                model.startswith("RUT") and not model.startswith(("RUTX", "RUTM"))
+            )
+
+            if is_poe_capable_series:
+                for port in bundle.port_scan.data.get(device_id, []):
+                    port_id = str(port.get("name") or "").strip()
+                    if port_id == "NIL" or not port_id:
+                        continue
+                    if (
+                        port.get("PoE") is not None
+                        or port.get("poe") is not None
+                        or port.get("poe_enable") is not None
+                        or port.get("PoE (W)") is not None
+                    ):
+                        unique_poe_power = f"{device_id}_{port_id}_poe_w"
+                        if unique_poe_power not in known:
+                            known.add(unique_poe_power)
+                            new_entities.append(RmsPoePowerSensor(bundle, device_id, port_id))
 
         if new_entities:
             async_add_entities(new_entities)

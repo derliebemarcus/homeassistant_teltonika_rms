@@ -433,49 +433,6 @@ def test_api_get_device_port_configurations_handles_status_channel_and_missing_v
     assert asyncio.run(client.async_get_device_port_configurations("42")) is None
 
 
-def test_api_set_device_port_enabled_posts_expected_payloads() -> None:
-    auth = FakeAuthClient(
-        [
-            FakeResponse(200, {"success": True, "data": {"queued": True}, "meta": {}}),
-            FakeResponse(200, {"success": True, "data": {"queued": True}, "meta": {}}),
-        ]
-    )
-    client = RmsApiClient(auth, _matrix())
-
-    assert asyncio.run(client.async_set_device_port_enabled("42", "port3", True)) == {
-        "queued": True
-    }
-    assert auth.calls[0]["url"].endswith("/devices/configurator/configure")
-    assert auth.calls[0]["json"] == {
-        "configuration": [
-            {
-                "path": "/ports_settings/config/{id}",
-                "content_type": "application/json",
-                "method": "put",
-                "request_data": {"data": {"enabled": "1"}},
-                "query_parameters": [{"key": "id", "value": "port3"}],
-                "device_id": [42],
-            }
-        ]
-    }
-
-    assert asyncio.run(client.async_set_device_port_enabled("device-a", "port3", False)) == {
-        "queued": True
-    }
-    assert auth.calls[1]["json"] == {
-        "configuration": [
-            {
-                "path": "/ports_settings/config/{id}",
-                "content_type": "application/json",
-                "method": "put",
-                "request_data": {"data": {"enabled": "0"}},
-                "query_parameters": [{"key": "id", "value": "port3"}],
-                "device_id": ["device-a"],
-            }
-        ]
-    }
-
-
 def test_api_set_device_port_poe_posts_expected_payloads() -> None:
     auth = FakeAuthClient(
         [
