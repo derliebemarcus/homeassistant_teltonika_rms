@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 REPORT_FILE="$(mktemp "${TMPDIR:-/tmp}/teltonika-rms-pytest-XXXXXX.xml")"
 VENV_DIR="$ROOT/.venv-test"
-COVERAGE_MINIMUM="97.81"
+COVERAGE_MINIMUM="97.83"
 
 pick_bootstrap_python() {
   if command -v python3.13 >/dev/null 2>&1; then

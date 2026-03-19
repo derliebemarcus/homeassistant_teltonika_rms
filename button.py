@@ -13,6 +13,8 @@ from . import TeltonikaRmsRuntime
 from .coordinator import CoordinatorBundle
 from .entity import TeltonikaRmsEntity
 
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,

@@ -15,6 +15,8 @@ from .coordinator import CoordinatorBundle
 from .entity import TeltonikaRmsEntity
 from .models import has_location_coordinates
 
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,

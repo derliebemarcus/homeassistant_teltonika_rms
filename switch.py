@@ -19,6 +19,9 @@ from .entity import TeltonikaRmsEntity
 LOGGER = logging.getLogger(__name__)
 
 
+PARALLEL_UPDATES = 0
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -50,7 +53,7 @@ async def async_setup_entry(
 
             if is_switch_device and not port_configs:
                 for i in range(1, 9):
-                    port_configs[f"switch_port{i}"] = {"id": f"switch_port{i}"}
+                    port_configs[f"port{i}"] = {"id": f"port{i}"}
                 for i in range(1, 3):
                     port_configs[f"sfp{i}"] = {"id": f"sfp{i}"}
 
@@ -74,8 +77,6 @@ async def async_setup_entry(
             for port in ports:
                 LOGGER.debug("Device %s configuring port: %s", device_id, port)
                 port_id = str(port.get("id") or "").strip()
-                if not port_id:
-                    continue
 
                 if _supports_poe(port):
                     unique_poe = f"{device_id}_{port_id}_poe"

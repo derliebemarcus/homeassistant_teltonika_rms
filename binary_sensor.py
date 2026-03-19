@@ -13,6 +13,8 @@ from . import TeltonikaRmsRuntime
 from .coordinator import CoordinatorBundle
 from .entity import TeltonikaRmsEntity
 
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -32,31 +34,29 @@ async def async_setup_entry(
                 known.add(unique)
                 new_entities.append(RmsOnlineBinarySensor(bundle, device_id))
 
-            port_configs = {
-                str(p.get("id")): p
-                for p in bundle.port_config.data.get(device_id, [])
-                if p.get("id") and str(p.get("id")) != "NIL"
-            }
+            port_ids: set[str] = set()
+            for p in bundle.port_config.data.get(device_id, []):
+                pid = str(p.get("id") or "").strip()
+                if pid and pid != "NIL":
+                    if pid.startswith("switch_"):
+                        pid = pid[7:]
+                    port_ids.add(pid)
 
             model = device_info.get("model", "UNKNOWN")
             is_switch_device = model.startswith("TSW") or model.startswith("SWM")
 
-            if is_switch_device and not port_configs:
+            if is_switch_device:
                 for i in range(1, 9):
-                    port_configs[f"switch_port{i}"] = {"id": f"switch_port{i}"}
+                    port_ids.add(f"port{i}")
                 for i in range(1, 3):
-                    port_configs[f"sfp{i}"] = {"id": f"sfp{i}"}
+                    port_ids.add(f"sfp{i}")
 
             for port in bundle.port_scan.data.get(device_id, []):
-                port_id = str(port.get("name") or "").strip()
-                if port_id == "NIL":
-                    continue
-                if port_id and port_id not in port_configs:
-                    port_configs[port_id] = {"id": port_id}
+                pid = str(port.get("name") or "").strip()
+                if pid and pid != "NIL":
+                    port_ids.add(pid)
 
-            for port_id in list(port_configs.keys()):
-                if port_id == "NIL":
-                    continue
+            for port_id in sorted(port_ids):
                 unique_port = f"{device_id}_{port_id}_link"
                 if unique_port not in known:
                     known.add(unique_port)

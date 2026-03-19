@@ -346,7 +346,7 @@ def test_platform_setup_entry_adds_expected_entities() -> None:
     assert len(added_binary) == 4
     assert len(added_sensor) == 13
     assert len(added_button) == 1
-    assert len(added_switch) == 2
+    assert len(added_switch) == 1
     assert len(added_update) == 1
     assert len(added_tracker) == 1
 
@@ -1072,3 +1072,17 @@ def test_missing_coverage_lines() -> None:
     # Check that added_switch is empty since empty port string is filtered
     added_switch: list[Any] = []
     asyncio.run(switch_setup(None, entry, added_switch.extend))
+
+
+def test_binary_sensor_removes_switch_prefix() -> None:
+    bundle = _bundle(_normalized())
+    bundle.inventory.data["dev-1"]["model"] = "TSW202"
+    bundle.port_config.data["dev-1"] = [{"id": "switch_port1"}]
+    runtime = TeltonikaRmsRuntime(bundle=bundle)
+    entry = SimpleNamespace(runtime_data=runtime, async_on_unload=lambda cb: None)
+
+    added_binary: list[Any] = []
+    asyncio.run(binary_setup(None, entry, added_binary.extend))
+
+    port1 = next((s for s in added_binary if s._attr_unique_id == "dev-1_port1_link"), None)
+    assert port1 is not None

@@ -16,6 +16,8 @@ from .coordinator import CoordinatorBundle
 from .entity import TeltonikaRmsEntity
 from .models import NormalizedDevice
 
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -53,14 +55,39 @@ async def async_setup_entry(
                 known.add(unique)
                 new_entities.append(entity_cls(bundle, device_id))
             model = device_info.get("model", "UNKNOWN")
+            is_switch_device = model.startswith("TSW") or model.startswith("SWM")
             is_poe_capable_series = model.startswith(("OTD", "SWM", "TSW")) or (
                 model.startswith("RUT") and not model.startswith(("RUTX", "RUTM"))
             )
 
             if is_poe_capable_series:
-                for port in bundle.port_scan.data.get(device_id, []):
-                    port_id = str(port.get("name") or "").strip()
-                    if port_id == "NIL" or not port_id:
+                port_configs = {
+                    str(p.get("id")): p
+                    for p in bundle.port_config.data.get(device_id, [])
+                    if p.get("id") and str(p.get("id")) != "NIL"
+                }
+
+                if is_switch_device and not port_configs:
+                    for i in range(1, 9):
+                        port_configs[f"port{i}"] = {"id": f"port{i}"}
+                    for i in range(1, 3):
+                        port_configs[f"sfp{i}"] = {"id": f"sfp{i}"}
+
+                for scan_port in bundle.port_scan.data.get(device_id, []):
+                    port_name = str(scan_port.get("name") or "").strip()
+                    if port_name == "NIL":
+                        continue
+                    if port_name and port_name not in port_configs:
+                        port_configs[port_name] = {"id": port_name}
+                    elif port_name in port_configs:
+                        # Merge scan data into config for PoE detection
+                        port_configs[port_name].update(scan_port)
+
+                ports = [p for p in port_configs.values() if str(p.get("id")) != "NIL"]
+
+                for port in ports:
+                    port_id = str(port.get("id") or "").strip()
+                    if not port_id:
                         continue
                     if (
                         port.get("PoE") is not None

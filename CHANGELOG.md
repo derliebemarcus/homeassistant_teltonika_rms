@@ -2,6 +2,43 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.0-beta16 - 2026-03-19
+
+### New Features
+
+- None.
+
+### Improvements
+
+- Reached Home Assistant "Platinum" Quality Scale level by explicitly defining parallel updates and declaring `quality_scale` in manifest.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- Fixed an issue where switch devices generated a duplicate `switch_port1` link sensor instead of merging it into `port1`.
+- Ensured link sensors are correctly generated for all switch device ports even if the ports are completely disconnected and not explicitly returned by the API's PoE configuration endpoint.
+
+## 0.9.0-beta15 - 2026-03-17
+
+### New Features
+
+- None.
+
+### Improvements
+
+- Increased test coverage suite from 97.81% to 97.83% and covered remaining edge cases relating to missing or malformed `PoE (W)` floats and string formatting logic.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- Fixed an issue causing Coveralls to report a `-0.02%` coverage regression in PRs. Missing paths and newly introduced PoE conditions have been completely backfilled with automated unit tests.
+
 ## 0.9.0-beta14 - 2026-03-17
 
 ### New Features

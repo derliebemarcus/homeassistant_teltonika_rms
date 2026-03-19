@@ -61,6 +61,14 @@ The integration connects to the RMS API, discovers your devices, and creates Hom
 2. Ensure files like `manifest.json` and `__init__.py` are directly inside that folder.
 3. Restart Home Assistant.
 
+## Removal
+
+1. Go to `Settings -> Devices & Services` in Home Assistant.
+2. Select the `Teltonika RMS` integration and click `Delete`.
+3. If installed via HACS, go to HACS -> Integrations, locate `Teltonika RMS`, click the three dots, and select `Remove`.
+4. If installed manually, delete the `/config/custom_components/teltonika_rms` directory.
+5. Restart Home Assistant.
+
 ## Credentials Setup
 
 ### OAuth2 (recommended)
