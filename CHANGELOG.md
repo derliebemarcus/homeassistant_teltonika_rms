@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.5 - 2026-03-19
+
+### New Features
+
+- Added Home Assistant Hassfest validation to automated checks.
+
+### Improvements
+
+- Sorted `manifest.json` keys according to Home Assistant requirements.
+- Cleaned up `__init__.py` by removing redundant `async_setup` and its associated `hassfest` warning.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- Fixed `hassfest` validation errors to meet HACS inclusion requirements.
+
 ## 0.9.4 - 2026-03-19
 
 ### New Features
