@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.1 - 2026-03-19
+
+### New Features
+
+- None.
+
+### Improvements
+
+- Updated the README to ensure its contents accurately match the integration's capabilities.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- None.
+
 ## 0.9.0 - 2026-03-19
 
 ### New Features
