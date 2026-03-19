@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.0 - 2026-03-19
+
+### New Features
+
+- None.
+
+### Improvements
+
+- Stable release of the 0.9.0 beta series.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- None.
+
 ## 0.9.0-beta16 - 2026-03-19
 
 ### New Features
