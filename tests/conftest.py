@@ -5,7 +5,14 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+# Find the true project root by looking for custom_components
+current = Path(__file__).resolve()
+ROOT = current.parents[1]
+for parent in current.parents:
+    if (parent / "custom_components" / "teltonika_rms" / "manifest.json").exists():
+        ROOT = parent
+        break
+
 PARENT = ROOT.parent
 CUSTOM_COMPONENTS = ROOT / "custom_components"
 

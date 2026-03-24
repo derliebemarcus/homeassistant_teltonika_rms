@@ -46,12 +46,9 @@ warn_unused_ignores = true
 
 [tool.mutmut]
 paths_to_mutate = [
+  "custom_components/teltonika_rms/__init__.py",
+  "custom_components/teltonika_rms/const.py",
   "custom_components/teltonika_rms/api.py",
   "custom_components/teltonika_rms/models.py",
   "custom_components/teltonika_rms/status_channel.py",
-]
-pytest_add_cli_args_test_selection = [
-  "tests/unit/test_models.py",
-  "tests/ha/test_api_runtime.py",
-  "tests/ha/test_runtime_modules.py",
 ]
