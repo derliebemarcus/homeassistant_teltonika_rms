@@ -67,6 +67,9 @@ jobs:
       - name: Run mypy
         run: python -m mypy .
 
+      - name: Check translation consistency
+        run: python tools/check_translations.py
+
   workflow-lint:
     runs-on: ubuntu-latest
     permissions:

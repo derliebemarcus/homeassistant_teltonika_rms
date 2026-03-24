@@ -1,0 +1,33 @@
+core:
+  - any:
+    - changed-files:
+      - any-glob-to-any-file: "custom_components/teltonika_rms/*.py"
+
+tests:
+  - any:
+    - changed-files:
+      - any-glob-to-any-file: "tests/**"
+
+docs:
+  - any:
+    - changed-files:
+      - any-glob-to-any-file: "*.md"
+      - any-glob-to-any-file: "docs/**"
+
+translations:
+  - any:
+    - changed-files:
+      - any-glob-to-any-file: "custom_components/teltonika_rms/translations/*.json"
+
+dependencies:
+  - any:
+    - changed-files:
+      - any-glob-to-any-file: "requirements*.txt"
+      - any-glob-to-any-file: "custom_components/teltonika_rms/manifest.json"
+
+ci:
+  - any:
+    - changed-files:
+      - any-glob-to-any-file: ".github/workflows/*.yml"
+      - any-glob-to-any-file: "tools/*.sh"
+      - any-glob-to-any-file: "tools/*.py"
