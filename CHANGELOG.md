@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.8 - 2026-03-24
+
+### New Features
+
+- None.
+
+### Improvements
+
+- Added an explicit `dark_icon.png` to ensure HACS renders the integration brand logo correctly when Home Assistant is in dark mode.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- None.
+
 ## 0.9.7 - 2026-03-24
 
 ### New Features
