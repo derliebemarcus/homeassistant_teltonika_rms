@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.9.10 - 2026-03-24
+
+### New Features
+
+- None.
+
+### Improvements
+
+- Added native light and dark mode support for the Teltonika brand logo in the repository README using HTML `<picture>` elements.
+
+### Changes
+
+- None.
+
+### Bugfixes
+
+- None.
+
 ## 0.9.9 - 2026-03-24
 
 ### New Features
