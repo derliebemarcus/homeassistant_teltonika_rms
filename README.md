@@ -1,6 +1,5 @@
-# [Teltonika](https://www.teltonika-networks.com/products/embedded-systems/calyx?utm_source=store&utm_medium=referral&utm_campaign=rms&utm_term=homeassistant&utm_content=product) RMS Home Assistant Integration
+# Teltonika RMS Home Assistant Integration
 
- [![Teltonika RMS Logo](custom_components/teltonika_rms/brand/icon48.png)](https://www.teltonika-networks.com/products/embedded-systems/calyx?utm_source=store&utm_medium=referral&utm_campaign=rms&utm_term=homeassistant&utm_content=product)
 [![HACS Badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 [![GitHub Release](https://img.shields.io/github/v/release/derliebemarcus/teltonika_rms?style=for-the-badge)](https://github.com/derliebemarcus/teltonika_rms/releases)
 [![License](https://img.shields.io/badge/License-MIT-1f6feb?style=for-the-badge)](https://github.com/derliebemarcus/teltonika_rms/blob/main/LICENSE)
@@ -10,17 +9,23 @@
 
 ## Table of Contents
 
-- [Summary](#summary)
-- [What This Component Provides](#what-this-component-provides)
-- [Roadmap](#roadmap)
-- [Installation](#installation)
-- [Removal](#removal)
-- [Credentials Setup](#credentials-setup)
-- [Configuration in Home Assistant](#configuration-in-home-assistant)
-- [Endpoint Matrix](#endpoint-matrix)
-- [Conventions and Tests](#conventions-and-tests)
-- [Git Hooks and Version Tags](#git-hooks-and-version-tags)
-- [About Teltonika](#about-teltonika)
+- [Teltonika RMS Home Assistant Integration](#teltonika-rms-home-assistant-integration)
+  - [Table of Contents](#table-of-contents)
+  - [Summary](#summary)
+  - [What This Component Provides](#what-this-component-provides)
+  - [Roadmap](#roadmap)
+  - [Installation](#installation)
+    - [Option 1: Install with HACS](#option-1-install-with-hacs)
+    - [Option 2: Manual Installation](#option-2-manual-installation)
+  - [Removal](#removal)
+  - [Credentials Setup](#credentials-setup)
+    - [OAuth2 (recommended)](#oauth2-recommended)
+    - [Personal Access Token (PAT)](#personal-access-token-pat)
+  - [Configuration in Home Assistant](#configuration-in-home-assistant)
+  - [Endpoint Matrix](#endpoint-matrix)
+  - [Conventions and Tests](#conventions-and-tests)
+  - [Git Hooks and Version Tags](#git-hooks-and-version-tags)
+  - [About Teltonika](#about-teltonika)
 
 ## Summary
 
