@@ -1,5 +1,7 @@
 # Teltonika RMS Home Assistant Integration
 
+ ![Teltonika RMS Logo](custom_components/teltonika_rms/brand/icon48.png)
+
 [![HACS Badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 [![GitHub Release](https://img.shields.io/github/v/release/derliebemarcus/teltonika_rms?style=for-the-badge)](https://github.com/derliebemarcus/teltonika_rms/releases)
 [![License](https://img.shields.io/badge/License-MIT-1f6feb?style=for-the-badge)](https://github.com/derliebemarcus/teltonika_rms/blob/main/LICENSE)
@@ -8,7 +10,7 @@
 
 ## Summary
 
-A custom Home Assistant integration for monitoring devices managed with Teltonika RMS, with optional reboot and PoE control actions from Home Assistant.
+A custom Home Assistant integration for monitoring devices managed with Teltonika RMS, with optional reboot and PoE control actions from Home Assistant. 
 
 The integration connects to the RMS API, discovers your devices, and creates Home Assistant entities for connectivity, diagnostics, firmware availability, Ethernet port usage, timestamps, and optional location tracking.
 
