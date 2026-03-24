@@ -7,6 +7,7 @@
 [![License](https://img.shields.io/badge/License-MIT-1f6feb?style=for-the-badge)](https://github.com/derliebemarcus/teltonika_rms/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/derliebemarcus/teltonika_rms/total?style=for-the-badge)](https://github.com/derliebemarcus/teltonika_rms/releases)
 [![Coverage Status](https://img.shields.io/coverallsCoverage/github/derliebemarcus/teltonika_rms?branch=main&style=for-the-badge)](https://coveralls.io/github/derliebemarcus/teltonika_rms)
+[![Teltonika Networks](https://img.shields.io/badge/Teltonika%20Networks-0054A6?style=for-the-badge)](https://www.teltonika-networks.com/products/embedded-systems/calyx?utm_source=store&utm_medium=referral&utm_campaign=rms&utm_term=homeassistant&utm_content=product)
 
 ## Summary
 
