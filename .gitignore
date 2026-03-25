@@ -29,6 +29,10 @@ htmlcov/
 .idea/
 .vscode/
 
+# Tooling outputs
+mutants/
+default/
+
 # External information directories
 additional_input/
 

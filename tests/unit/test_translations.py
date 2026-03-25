@@ -7,7 +7,17 @@ import re
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[2]
+
+# Find the true project root by looking for custom_components
+def get_root() -> Path:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "custom_components" / "teltonika_rms" / "manifest.json").exists():
+            return parent
+    return current.parents[2]
+
+
+ROOT = get_root()
 INTEGRATION_DIR = ROOT / "custom_components" / "teltonika_rms"
 STRINGS = INTEGRATION_DIR / "strings.json"
 TRANSLATIONS_DIR = INTEGRATION_DIR / "translations"

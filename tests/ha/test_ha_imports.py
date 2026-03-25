@@ -15,7 +15,13 @@ pytestmark = pytest.mark.ha
     reason="homeassistant package is not installed in this environment",
 )
 def test_integration_module_imports_with_homeassistant() -> None:
-    root = Path(__file__).resolve().parents[2]
+    current = Path(__file__).resolve()
+    root = current.parents[2]
+    for parent in current.parents:
+        if (parent / "custom_components" / "teltonika_rms" / "manifest.json").exists():
+            root = parent
+            break
+
     integration = root / "custom_components" / "teltonika_rms"
     spec = importlib.util.spec_from_file_location(
         "teltonika_rms",

@@ -37,7 +37,7 @@ files = [
   "custom_components/teltonika_rms/switch.py",
   "custom_components/teltonika_rms/update.py",
 ]
-exclude = "(^tests/|^tools/)"
+exclude = "(^tests/|^tools/|^mutants/|^default/)"
 check_untyped_defs = true
 ignore_missing_imports = true
 warn_redundant_casts = true
