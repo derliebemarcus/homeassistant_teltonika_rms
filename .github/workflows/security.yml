@@ -37,7 +37,7 @@ jobs:
             CVE-2026-4539
 
   secret-scan:
-    runs-on: [self-hosted, linux, X64]
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v6

@@ -71,7 +71,7 @@ jobs:
         run: python tools/check_translations.py
 
   workflow-lint:
-    runs-on: [self-hosted, linux, X64]
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
