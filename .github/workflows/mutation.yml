@@ -26,11 +26,14 @@ jobs:
         uses: actions/checkout@v6
       - name: Install mutation test dependencies
         run: |
+          python -m venv .venv
+          source .venv/bin/activate
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
 
       - name: Run mutation testing
         run: |
+          source .venv/bin/activate
           mutmut run
 
       - name: Upload mutmut results
