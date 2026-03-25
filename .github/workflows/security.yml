@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   dependency-audit:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -34,9 +34,10 @@ jobs:
             CVE-2026-32597
             CVE-2026-27448
             CVE-2026-27459
+            CVE-2026-4539
 
   secret-scan:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
