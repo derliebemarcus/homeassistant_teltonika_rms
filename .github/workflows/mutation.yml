@@ -34,6 +34,7 @@ jobs:
       - name: Run mutation testing
         run: |
           source .venv/bin/activate
+          python -m pytest --cov=. --cov-config=.coveragerc tests/
           mutmut run
 
       - name: Upload mutmut results
