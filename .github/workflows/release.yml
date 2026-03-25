@@ -24,7 +24,7 @@ jobs:
     runs-on: [self-hosted, linux, X64]
     env:
       PYENV_ROOT: /opt/github/pyenv
-      PATH: /opt/github/pyenv/shims:/opt/github/pyenv/bin:${PATH}
+      PATH: /opt/github/pyenv/shims:/opt/github/pyenv/bin:/usr/local/bin:/usr/bin:/bin
       PYENV_VERSION: "3.14"
 
     steps:
