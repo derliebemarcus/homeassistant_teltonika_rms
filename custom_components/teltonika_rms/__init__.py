@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from datetime import UTC
+from typing import TYPE_CHECKING, Any, cast
 
 from .const import (
     AUTH_MODE_OAUTH2,
@@ -171,12 +172,19 @@ def _build_history_handler(hass: HomeAssistant):
 
     from .api import RmsApiClient
 
+    # Helper to parse ISO-formatted datetime strings from service calls
+    def parse_datetime_string(value: str) -> datetime:
+        try:
+            return datetime.fromisoformat(value).replace(tzinfo=UTC)
+        except ValueError as err:
+            raise vol.Invalid(f"Invalid datetime format: {value}") from err
+
     # Validate input types for the service call
     HISTORY_SCHEMA = vol.Schema(
         {
             vol.Required("device_id"): str,
-            vol.Required("from_time"): vol.Coerce(datetime),
-            vol.Required("to_time"): vol.Coerce(datetime),
+            vol.Required("from_time"): parse_datetime_string,
+            vol.Required("to_time"): parse_datetime_string,
             vol.Required("interval"): str,
             vol.Optional("config_id", default=0): vol.All(vol.Coerce(int), vol.Range(min=0)),
             vol.Optional("keys"): vol.All(str, lambda v: [k.strip() for k in v.split(",")]),
@@ -206,8 +214,10 @@ def _build_history_handler(hass: HomeAssistant):
             )
             return
 
-        for entry in hass.config_entries.async_entries(DOMAIN):
-            runtime: TeltonikaRmsRuntime | None = getattr(entry, "runtime_data", None)
+        for entry in await hass.config_entries.async_entries(DOMAIN):
+            runtime: TeltonikaRmsRuntime | None = cast(
+                TeltonikaRmsRuntime, getattr(entry, "runtime_data", None)
+            )
             if runtime is None:
                 continue
             api: RmsApiClient = runtime.bundle.api

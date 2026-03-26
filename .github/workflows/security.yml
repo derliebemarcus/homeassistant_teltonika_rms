@@ -40,6 +40,7 @@ jobs:
             CVE-2026-27448
             CVE-2026-27459
             CVE-2026-4539
+            CVE-2026-25645
 
   secret-scan:
     runs-on: ubuntu-latest

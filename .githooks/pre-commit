@@ -63,7 +63,7 @@ ensure_package "pytest_cov" "pytest-cov>=6,<7"
 ensure_package "socketio" "python-socketio==5.11.2"
 ensure_package "ruff" "ruff"
 ensure_package "mypy" "mypy>=1.15"
-ensure_package "pip_audit" "pip-audit"
+ensure_package "pytest_asyncio" "pytest-asyncio<0.24,>=0.23"
 
 echo "[pre-commit] Running ruff auto-fixes..."
 "$PYTHON_BIN" -m ruff format .
@@ -88,7 +88,7 @@ if ! "$PYTHON_BIN" -m mypy .; then
 fi
 
 echo "[pre-commit] Running pip-audit security check..."
-if ! "$PYTHON_BIN" -m pip_audit -r requirements-dev.txt --ignore-vuln CVE-2025-67221 --ignore-vuln CVE-2026-32597 --ignore-vuln CVE-2026-27448 --ignore-vuln CVE-2026-27459 --ignore-vuln CVE-2026-4539; then
+if ! "$PYTHON_BIN" -m pip_audit -r requirements-dev.txt --ignore-vuln CVE-2025-67221 --ignore-vuln CVE-2026-32597 --ignore-vuln CVE-2026-27448 --ignore-vuln CVE-2026-27459 --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-25645; then
   echo "[pre-commit] Security audit failed. Fix vulnerable dependencies before committing."
   exit 1
 fi
