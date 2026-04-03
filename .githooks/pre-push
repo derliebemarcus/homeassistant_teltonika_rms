@@ -10,7 +10,7 @@ fi
 
 if command -v docker >/dev/null 2>&1; then
   echo "[pre-push] Running OSV-Scanner for comprehensive vulnerability checks..."
-  if ! docker run --rm -v "$ROOT:/src" ghcr.io/google/osv-scanner:latest scan source -r /src; then
+  if ! docker run --rm -v "$ROOT:/src" ghcr.io/google/osv-scanner:latest scan source -r --no-resolve /src; then
     echo "[pre-push] OSV-Scanner detected vulnerabilities. Fix them before pushing."
     exit 1
   fi

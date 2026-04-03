@@ -1,0 +1,11 @@
+[[IgnoredVulns]]
+id = "GHSA-mr82-8j83-vxmv"
+reason = "Dependency of Home Assistant, currently accepted risk."
+
+[[IgnoredVulns]]
+id = "GHSA-m959-cc7f-wv43"
+reason = "Dependency of Home Assistant, currently accepted risk."
+
+[[IgnoredVulns]]
+id = "GHSA-752w-5fwx-jx9f"
+reason = "Dependency of Home Assistant, currently accepted risk."

@@ -113,7 +113,7 @@ async def test_async_oauth_create_entry_reauth_mismatch(hass: HomeAssistant) -> 
     handler.context = {}
 
     # Mock token with different sub
-    data = {"token": {"access_token": "header.eyJzdWIiOiAibmV3LWlkIn0.sig"}} # gitleaks:allow
+    data = {"token": {"access_token": "header.eyJzdWIiOiAibmV3LWlkIn0.sig"}}  # gitleaks:allow
 
     with patch.object(OAuth2FlowHandler, "source", "reauth"):
         handler._reauth_entry = MagicMock()
@@ -202,7 +202,7 @@ async def test_oauth_create_entry_new(hass: HomeAssistant) -> None:
     handler.hass = hass
     handler.context = {}
 
-    data = {"token": {"access_token": "header.eyJzdWIiOiAibmV3LXVzZXIifQ.sig"}} # gitleaks:allow
+    data = {"token": {"access_token": "header.eyJzdWIiOiAibmV3LXVzZXIifQ.sig"}}  # gitleaks:allow
     with patch.object(hass.config_entries, "async_entry_for_domain_unique_id", return_value=None):
         result = await handler.async_oauth_create_entry(data)
         assert result["type"] == FlowResultType.CREATE_ENTRY
@@ -216,7 +216,7 @@ async def test_oauth_create_entry_reauth_success(hass: HomeAssistant) -> None:
     handler.hass = hass
     handler.context = {}
 
-    data = {"token": {"access_token": "header.eyJzdWIiOiAidXNlci0xMjMifQ.sig"}} # gitleaks:allow
+    data = {"token": {"access_token": "header.eyJzdWIiOiAidXNlci0xMjMifQ.sig"}}  # gitleaks:allow
 
     with (
         patch.object(OAuth2FlowHandler, "source", "reauth"),
