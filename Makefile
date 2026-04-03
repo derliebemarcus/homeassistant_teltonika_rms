@@ -41,7 +41,7 @@ audit:
 
 osv:
 	@echo "Running OSV-Scanner for comprehensive vulnerability checks..."
-	@docker run --rm -v $(PWD):/src ghcr.io/google/osv-scanner:latest -r --skip-git /src
+	@docker run --rm -v $(PWD):/src ghcr.io/google/osv-scanner:latest scan source -r --skip-git /src
 
 hassfest:
 	@echo "Running Home Assistant Hassfest validation via Docker..."
