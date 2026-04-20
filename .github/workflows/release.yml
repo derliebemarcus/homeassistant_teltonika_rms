@@ -57,7 +57,7 @@ jobs:
           echo "commit_sha=$(git rev-list -n 1 "${{ steps.tag.outputs.tag }}")" >> "$GITHUB_OUTPUT"
 
       - name: Wait for required checks on tagged commit
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           TARGET_SHA: ${{ steps.target.outputs.commit_sha }}
         with:
@@ -133,7 +133,7 @@ jobs:
           python3 tools/extract_release_notes.py custom_components/teltonika_rms/manifest.json CHANGELOG.md release_notes.md
 
       - name: Create or update GitHub release
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
