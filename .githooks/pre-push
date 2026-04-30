@@ -18,7 +18,7 @@ else
 fi
 
 echo "[pre-push] Running OSV-Scanner using $CONTAINER_ENGINE for comprehensive vulnerability checks..."
-if ! "$CONTAINER_ENGINE" run --rm -v "$ROOT:/src" ghcr.io/google/osv-scanner:latest scan source -r --no-resolve --ignore-vuln GHSA-6w46-j5rx-g56g /src; then
+if ! "$CONTAINER_ENGINE" run --rm -v "$ROOT:/src" ghcr.io/google/osv-scanner:latest scan source -r --no-resolve /src; then
   echo "[pre-push] OSV-Scanner detected vulnerabilities. Fix them before pushing."
   exit 1
 fi

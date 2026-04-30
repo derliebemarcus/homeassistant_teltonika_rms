@@ -21,3 +21,7 @@ reason = "Dependency of Home Assistant, currently accepted risk until upstream f
 [[IgnoredVulns]]
 id = "GHSA-pjjw-68hj-v9mw"
 reason = "Dependency of Home Assistant (uv), currently accepted risk until upstream fixes it."
+
+[[IgnoredVulns]]
+id = "GHSA-6w46-j5rx-g56g"
+reason = "Strategic decision: pytest 9.x collides with HA core dependencies. Staying on 8.x for stability."
