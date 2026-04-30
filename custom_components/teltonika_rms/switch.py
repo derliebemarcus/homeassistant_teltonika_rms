@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import TeltonikaRmsRuntime
 from .coordinator import CoordinatorBundle
-from .entity import TeltonikaRmsEntity
+from .entity import TeltonikaRmsEntity, is_poe_capable_series
 
 LOGGER = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
@@ -37,47 +37,12 @@ async def async_setup_entry(
         new_entities: list[SwitchEntity] = []
         for device_id, device_info in bundle.inventory.data.items():
             model = device_info.get("model", "UNKNOWN")
-            is_switch_device = model.startswith("TSW") or model.startswith("SWM")
-            is_poe_capable_series = model.startswith(("OTD", "SWM", "TSW")) or (
-                model.startswith("RUT") and not model.startswith(("RUTX", "RUTM"))
-            )
-
-            if not is_poe_capable_series:
+            if not is_poe_capable_series(model):
                 continue
 
-            port_configs = {
-                str(p.get("id")): p
-                for p in bundle.port_config.data.get(device_id, [])
-                if p.get("id") and str(p.get("id")) != "NIL"
-            }
+            port_configs = _get_device_port_configs(device_id, model, bundle)
 
-            if is_switch_device and not port_configs:
-                for i in range(1, 9):
-                    port_configs[f"port{i}"] = {"id": f"port{i}"}
-                for i in range(1, 3):
-                    port_configs[f"sfp{i}"] = {"id": f"sfp{i}"}
-
-            for scan_port in bundle.port_scan.data.get(device_id, []):
-                port_name = str(scan_port.get("name") or "").strip()
-                if port_name == "NIL":
-                    continue
-                if port_name and port_name not in port_configs:
-                    port_configs[port_name] = {"id": port_name}
-
-            ports = [p for p in port_configs.values() if str(p.get("id")) != "NIL"]
-
-            LOGGER.debug(
-                "Device detected: %s (Model: %s, Is Switch: %s). Found %d port configurations.",
-                device_id,
-                model,
-                is_switch_device,
-                len(ports),
-            )
-
-            for port in ports:
-                LOGGER.debug("Device %s configuring port: %s", device_id, port)
-                port_id = str(port.get("id") or "").strip()
-
+            for port_id, port in port_configs.items():
                 if _supports_poe(port):
                     unique_poe = f"{device_id}_{port_id}_poe"
                     if unique_poe not in known:
@@ -91,6 +56,33 @@ async def async_setup_entry(
     entry.async_on_unload(bundle.inventory.async_add_listener(_add_new_entities))
     entry.async_on_unload(bundle.port_config.async_add_listener(_add_new_entities))
     entry.async_on_unload(bundle.port_scan.async_add_listener(_add_new_entities))
+
+
+def _get_device_port_configs(
+    device_id: str, model: str, bundle: CoordinatorBundle
+) -> dict[str, dict[str, Any]]:
+    """Get port configurations for a specific device."""
+    port_configs: dict[str, dict[str, Any]] = {
+        str(p.get("id")): p
+        for p in bundle.port_config.data.get(device_id, [])
+        if p.get("id") and str(p.get("id")) != "NIL"
+    }
+
+    is_switch_device = model.startswith("TSW") or model.startswith("SWM")
+    if is_switch_device and not port_configs:
+        # Default ports for switch devices if no config is available yet
+        for i in range(1, 9):
+            port_configs[f"port{i}"] = {"id": f"port{i}"}
+        for i in range(1, 3):
+            port_configs[f"sfp{i}"] = {"id": f"sfp{i}"}
+
+    # Supplement with scanned ports
+    for scan_port in bundle.port_scan.data.get(device_id, []):
+        port_name = str(scan_port.get("name") or "").strip()
+        if port_name and port_name != "NIL" and port_name not in port_configs:
+            port_configs[port_name] = {"id": port_name}
+
+    return port_configs
 
 
 class RmsPoeSwitch(TeltonikaRmsEntity, SwitchEntity):

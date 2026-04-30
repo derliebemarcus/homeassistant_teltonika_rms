@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 REPORT_FILE="$(mktemp "${TMPDIR:-/tmp}/teltonika-rms-pytest-XXXXXX.xml")"
 VENV_DIR="$ROOT/.venv-test"
-COVERAGE_MINIMUM="97.78"
+COVERAGE_MINIMUM="97.79"
 
 pick_bootstrap_python() {
   if command -v python3.14 >/dev/null 2>&1; then
@@ -158,5 +158,43 @@ if [ "$PYTEST_EXIT" -ne 0 ]; then
   exit 1
 fi
 
+echo "[pre-commit] Running SonarQube Analysis..."
+
+# Ensure common paths are included (especially for sonar-scanner)
+export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin"
+
+# Load SONAR_TOKEN from common locations if not already set
+if [ -z "${SONAR_TOKEN:-}" ]; then
+  if [ -f "$ROOT/.env" ]; then
+    set -a; source "$ROOT/.env"; set +a
+  fi
+fi
+if [ -z "${SONAR_TOKEN:-}" ]; then
+  if [ -f "$HOME/.aliases" ]; then
+    # shellcheck disable=SC1090
+    source "$HOME/.aliases"
+  fi
+fi
+
+if [ -z "${SONAR_TOKEN:-}" ]; then
+  echo "[pre-commit] Error: SONAR_TOKEN is not set. Cannot run SonarQube analysis."
+  exit 1
+fi
+
+# Run scanner and wait for quality gate result
+if ! sonar-scanner \
+  -Dsonar.projectKey=teltonika_rms \
+  -Dsonar.host.url=https://sonarqube.home.siczb.de \
+  -Dsonar.token="$SONAR_TOKEN" \
+  -Dsonar.qualitygate.wait=true \
+  -Dsonar.python.version=3.14 \
+  -Dsonar.sources=custom_components/teltonika_rms \
+  -Dsonar.tests=tests \
+  -Dsonar.python.coverage.reportPaths=coverage.xml; then
+  echo "[pre-commit] SonarQube Quality Gate FAILED. Commit blocked."
+  exit 1
+fi
+
+echo "[pre-commit] SonarQube Quality Gate passed."
 echo "[pre-commit] All tests passed."
 exit 0

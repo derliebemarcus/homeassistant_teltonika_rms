@@ -1,7 +1,8 @@
 ---
 refresh:
   name: Refresh RMS Data
-  description: Trigger immediate inventory and state refresh for all Teltonika RMS entries.
+  description: >
+    Trigger immediate inventory and state refresh for all Teltonika RMS entries.
 
 get_device_history:
   name: Get Device History
@@ -46,7 +47,8 @@ get_device_history:
       name: Keys
       description: >
         Optional comma-separated list of parameter keys to fetch (e.g.,
-        'gps_coordinates,signal_strength'). Only used if Monitoring Config ID is not provided.
+        'gps_coordinates,signal_strength'). Only used if Monitoring Config
+        ID is not provided.
       required: false
       selector:
         text: {}

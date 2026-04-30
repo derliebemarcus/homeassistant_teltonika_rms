@@ -13,17 +13,18 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import TeltonikaRmsRuntime
 from .coordinator import CoordinatorBundle
-from .entity import TeltonikaRmsEntity
+from .entity import TeltonikaRmsEntity, is_poe_capable_series
 from .models import NormalizedDevice
 
 PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Set up Teltonika RMS sensor entities."""
     runtime: TeltonikaRmsRuntime = entry.runtime_data
     bundle: CoordinatorBundle = runtime.bundle
     known: set[str] = set()
@@ -32,53 +33,15 @@ async def async_setup_entry(
     def _add_new_entities() -> None:
         new_entities: list[SensorEntity] = []
 
-        def _create_standard_sensors(device_id: str, normalized: NormalizedDevice) -> None:
-            for entity_cls in (
-                RmsModelSensor,
-                RmsFirmwareSensor,
-                RmsSerialSensor,
-                RmsLastSeenSensor,
-                RmsClientsCountSensor,
-                RmsRouterUptimeSensor,
-                RmsTemperatureSensor,
-                RmsSignalStrengthSensor,
-                RmsWanStateSensor,
-                RmsConnectionStateSensor,
-                RmsConnectionTypeSensor,
-                RmsSimSlotSensor,
-            ):
-                if not entity_cls.should_create(normalized):
-                    continue
-                unique = f"{device_id}_{entity_cls.entity_key}"
-                if unique not in known:
-                    known.add(unique)
-                    new_entities.append(entity_cls(bundle, device_id))
-
-        def _create_poe_sensors(device_id: str, device_info: dict[str, Any]) -> None:
-            model = device_info.get("model", "UNKNOWN")
-            is_poe_series = model.startswith(("OTD", "SWM", "TSW")) or (
-                model.startswith("RUT") and not model.startswith(("RUTX", "RUTM"))
-            )
-            if not is_poe_series:
-                return
-
-            ports = _get_initial_ports(bundle, device_id, model)
-            _apply_scan_results(bundle, device_id, ports)
-
-            for port in ports.values():
-                pid = str(port.get("id") or "").strip()
-                if not pid or pid == "NIL":
-                    continue
-                if any(port.get(k) is not None for k in ("PoE", "poe", "poe_enable", "PoE (W)")):
-                    unique_id = f"{device_id}_{pid}_poe_w"
-                    if unique_id not in known:
-                        known.add(unique_id)
-                        new_entities.append(RmsPoePowerSensor(bundle, device_id, pid))
-
         for device_id, device_info in bundle.inventory.data.items():
+            # 1. Standard Diagnostic Sensors
             if normalized := bundle.merged_device(device_id):
-                _create_standard_sensors(device_id, normalized)
-            _create_poe_sensors(device_id, device_info)
+                _add_standard_sensors(bundle, device_id, normalized, known, new_entities)
+
+            # 2. PoE Monitoring Sensors
+            model = device_info.get("model", "UNKNOWN")
+            if is_poe_capable_series(model):
+                _add_poe_sensors(bundle, device_id, model, known, new_entities)
 
         if new_entities:
             async_add_entities(new_entities)
@@ -87,6 +50,61 @@ async def async_setup_entry(
     entry.async_on_unload(bundle.inventory.async_add_listener(_add_new_entities))
     entry.async_on_unload(bundle.state.async_add_listener(_add_new_entities))
     entry.async_on_unload(bundle.port_scan.async_add_listener(_add_new_entities))
+
+
+def _add_standard_sensors(
+    bundle: CoordinatorBundle,
+    device_id: str,
+    normalized: NormalizedDevice,
+    known: set[str],
+    new_entities: list[SensorEntity],
+) -> None:
+    """Add standard diagnostic sensors for a device."""
+    standard_classes = (
+        RmsModelSensor,
+        RmsFirmwareSensor,
+        RmsSerialSensor,
+        RmsLastSeenSensor,
+        RmsClientsCountSensor,
+        RmsRouterUptimeSensor,
+        RmsTemperatureSensor,
+        RmsSignalStrengthSensor,
+        RmsWanStateSensor,
+        RmsConnectionStateSensor,
+        RmsConnectionTypeSensor,
+        RmsSimSlotSensor,
+    )
+    for entity_cls in standard_classes:
+        if not entity_cls.should_create(normalized):
+            continue
+        unique = f"{device_id}_{entity_cls.entity_key}"
+        if unique not in known:
+            known.add(unique)
+            new_entities.append(entity_cls(bundle, device_id))
+
+
+def _add_poe_sensors(
+    bundle: CoordinatorBundle,
+    device_id: str,
+    model: str,
+    known: set[str],
+    new_entities: list[SensorEntity],
+) -> None:
+    """Add PoE monitoring sensors for a device."""
+    ports = _get_initial_ports(bundle, device_id, model)
+    _apply_scan_results(bundle, device_id, ports)
+
+    for port in ports.values():
+        pid = str(port.get("id") or "").strip()
+        if not pid or pid == "NIL":
+            continue
+
+        has_poe_data = any(port.get(k) is not None for k in ("PoE", "poe", "poe_enable", "PoE (W)"))
+        if has_poe_data:
+            unique_id = f"{device_id}_{pid}_poe_w"
+            if unique_id not in known:
+                known.add(unique_id)
+                new_entities.append(RmsPoePowerSensor(bundle, device_id, pid))
 
 
 def _get_initial_ports(

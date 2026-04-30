@@ -14,10 +14,15 @@ from custom_components.teltonika_rms.application_credentials import (
     async_get_auth_implementation,
     async_get_authorization_server,
     async_get_description_placeholders,
+    async_get_local_oauth_show_setup,
 )
 from custom_components.teltonika_rms.const import AUTHORIZE_URL, TOKEN_URL
 
 pytestmark = pytest.mark.ha
+
+
+def test_async_get_local_oauth_show_setup_returns_true() -> None:
+    assert asyncio.run(async_get_local_oauth_show_setup(object())) is True  # type: ignore[arg-type]
 
 
 def test_async_get_auth_implementation_uses_correct_pkce_argument_order() -> None:

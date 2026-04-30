@@ -38,7 +38,7 @@ class EndpointMatrix:
 
     def scopes_for(self, key: str) -> tuple[str, ...]:
         spec = self.endpoints.get(key)
-        return spec.scopes if spec else tuple()
+        return spec.scopes if spec else ()
 
     def format_path(self, key: str, **params: str) -> str | None:
         path = self.path_for(key)
@@ -138,7 +138,7 @@ def _matrix_from_openapi(spec: dict[str, Any], frozen: EndpointMatrix) -> dict[s
 def _extract_scopes(operation: dict[str, Any], global_security: list[Any]) -> tuple[str, ...]:
     operation_security = operation.get("security", global_security)
     if not isinstance(operation_security, list):
-        return tuple()
+        return ()
 
     scopes: list[str] = []
     for item in operation_security:

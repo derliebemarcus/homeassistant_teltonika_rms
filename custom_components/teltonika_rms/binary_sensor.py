@@ -17,10 +17,11 @@ PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Set up Teltonika RMS binary sensor entities."""
     runtime: TeltonikaRmsRuntime = entry.runtime_data
     bundle: CoordinatorBundle = runtime.bundle
     known: set[str] = set()
@@ -29,36 +30,16 @@ async def async_setup_entry(
     def _add_new_entities() -> None:
         new_entities: list[BinarySensorEntity] = []
 
-        def _collect_port_ids(device_id: str, device_info: dict[str, Any]) -> set[str]:
-            port_ids: set[str] = set()
-            # 1. From configuration
-            for p in bundle.port_config.data.get(device_id, []):
-                pid = str(p.get("id") or "").strip()
-                if pid and pid != "NIL":
-                    if pid.startswith("switch_"):
-                        pid = pid[7:]
-                    port_ids.add(pid)
-
-            # 2. Default switch ports
-            model = device_info.get("model", "UNKNOWN")
-            if model.startswith(("TSW", "SWM")):
-                port_ids.update(f"port{i}" for i in range(1, 9))
-                port_ids.update(f"sfp{i}" for i in range(1, 3))
-
-            # 3. From scanning
-            for port in bundle.port_scan.data.get(device_id, []):
-                pid = str(port.get("name") or "").strip()
-                if pid and pid != "NIL":
-                    port_ids.add(pid)
-            return port_ids
-
         for device_id, device_info in bundle.inventory.data.items():
-            unique = f"{device_id}_online"
-            if unique not in known:
-                known.add(unique)
+            # 1. Device Online State
+            online_unique = f"{device_id}_online"
+            if online_unique not in known:
+                known.add(online_unique)
                 new_entities.append(RmsOnlineBinarySensor(bundle, device_id))
 
-            for port_id in sorted(_collect_port_ids(device_id, device_info)):
+            # 2. Port Link States
+            port_ids = _collect_device_port_ids(device_id, device_info, bundle)
+            for port_id in sorted(port_ids):
                 unique_port = f"{device_id}_{port_id}_link"
                 if unique_port not in known:
                     known.add(unique_port)
@@ -70,6 +51,35 @@ async def async_setup_entry(
     _add_new_entities()
     entry.async_on_unload(bundle.inventory.async_add_listener(_add_new_entities))
     entry.async_on_unload(bundle.port_scan.async_add_listener(_add_new_entities))
+
+
+def _collect_device_port_ids(
+    device_id: str, device_info: dict[str, Any], bundle: CoordinatorBundle
+) -> set[str]:
+    """Collect all relevant port identifiers for a device."""
+    port_ids: set[str] = set()
+
+    # 1. From port configuration data
+    for port in bundle.port_config.data.get(device_id, []):
+        pid = str(port.get("id") or "").strip()
+        if pid and pid != "NIL":
+            if pid.startswith("switch_"):
+                pid = pid[7:]
+            port_ids.add(pid)
+
+    # 2. Default switch ports for specific models
+    model = device_info.get("model", "UNKNOWN")
+    if model.startswith(("TSW", "SWM")):
+        port_ids.update(f"port{i}" for i in range(1, 9))
+        port_ids.update(f"sfp{i}" for i in range(1, 3))
+
+    # 3. From scanning results
+    for scan_port in bundle.port_scan.data.get(device_id, []):
+        pid = str(scan_port.get("name") or "").strip()
+        if pid and pid != "NIL":
+            port_ids.add(pid)
+
+    return port_ids
 
 
 class RmsOnlineBinarySensor(TeltonikaRmsEntity, BinarySensorEntity):

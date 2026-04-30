@@ -53,3 +53,12 @@ class TeltonikaRmsEntity(CoordinatorEntity):
             serial_number=normalized.serial,
         )
         return info
+
+
+def is_poe_capable_series(model: str | None) -> bool:
+    """Check if the device model series is potentially PoE capable."""
+    if not model:
+        return False
+    return model.startswith(("OTD", "SWM", "TSW")) or (
+        model.startswith("RUT") and not model.startswith(("RUTX", "RUTM"))
+    )

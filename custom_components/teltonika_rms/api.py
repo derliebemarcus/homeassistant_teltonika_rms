@@ -109,6 +109,8 @@ class PatRmsAuthClient:
         )
 
     async def async_get_access_token(self) -> str | None:
+        """Return bearer token."""
+        await asyncio.sleep(0)
         return self._pat_token
 
 
@@ -433,13 +435,14 @@ class RmsApiClient:
     ) -> tuple[Any, dict[str, Any]]:
         response: ClientResponse | None = None
         try:
-            response = await self._auth.async_request(
-                method,
-                url,
-                params=params,
-                json=json_body,
-                timeout=_DEFAULT_TIMEOUT,
-            )
+            async with asyncio.timeout(_DEFAULT_TIMEOUT):
+                response = await self._auth.async_request(
+                    method,
+                    url,
+                    params=params,
+                    json=json_body,
+                    timeout=_DEFAULT_TIMEOUT,
+                )
             if response.status in (401, 403):
                 raise ConfigEntryAuthFailed("Teltonika RMS auth failed or missing scopes")
 

@@ -145,21 +145,35 @@ def normalize_device(
     if location:
         merged["location"] = location
 
-    device_id = first_value(
-        merged,
-        "id",
-        "device_id",
-        "deviceId",
-        "serial",
-        "imei",
-    )
+    device_id = first_value(merged, "id", "device_id", "deviceId", "serial", "imei")
     if device_id is None:
         return None
     device_id_str = str(device_id)
 
     name = first_value(merged, "name", "title", "hostname", "device_name") or f"RMS {device_id_str}"
+    serial = first_value(merged, "serial", "serial_number", "sn")
 
-    model = first_value(merged, "model", "product.model", "hardware.model")
+    firmware_info = _parse_firmware_info(merged)
+    diag_info = _parse_diagnostic_info(merged)
+    loc_info = _parse_location_info(merged)
+
+    return NormalizedDevice(
+        device_id=device_id_str,
+        name=str(name),
+        model=first_value(merged, "model", "product.model", "hardware.model"),
+        serial=str(serial) if serial is not None else None,
+        online=parse_online(
+            first_value(merged, "online", "status", "connection.online", "state.online")
+        ),
+        raw=merged,
+        **firmware_info,
+        **diag_info,
+        **loc_info,
+    )
+
+
+def _parse_firmware_info(merged: dict[str, Any]) -> dict[str, Any]:
+    """Extract firmware-related information."""
     firmware = first_value(
         merged,
         "firmware",
@@ -183,23 +197,23 @@ def normalize_device(
         "firmware_information.stable",
         "stable_firmware",
     )
-    serial = first_value(merged, "serial", "serial_number", "sn")
-    comparison_firmware = stable_firmware
-    firmware_update_available = None
-    if firmware is not None and comparison_firmware is not None:
-        firmware_update_available = str(firmware) != str(comparison_firmware)
 
-    online = parse_online(
-        first_value(merged, "online", "status", "connection.online", "state.online")
-    )
+    update_available = None
+    if firmware is not None and stable_firmware is not None:
+        update_available = str(firmware) != str(stable_firmware)
 
+    return {
+        "firmware": str(firmware) if firmware is not None else None,
+        "latest_firmware": str(latest_firmware) if latest_firmware is not None else None,
+        "stable_firmware": str(stable_firmware) if stable_firmware is not None else None,
+        "firmware_update_available": update_available,
+    }
+
+
+def _parse_diagnostic_info(merged: dict[str, Any]) -> dict[str, Any]:
+    """Extract diagnostic and network status info."""
     last_seen_raw = first_value(
-        merged,
-        "last_seen",
-        "lastSeen",
-        "last_update",
-        "updated_at",
-        "timestamp",
+        merged, "last_seen", "lastSeen", "last_update", "updated_at", "timestamp"
     )
     last_seen: datetime | None
     if isinstance(last_seen_raw, datetime):
@@ -207,15 +221,25 @@ def normalize_device(
     else:
         last_seen = parse_rms_timestamp(str(last_seen_raw)) if last_seen_raw else None
 
-    clients_count = parse_int(first_value(merged, "clients_count"))
-    router_uptime = parse_int(first_value(merged, "router_uptime"))
-    temperature = parse_float(first_value(merged, "temperature"))
-    signal_strength = parse_int(first_value(merged, "signal"))
-    sim_slot = parse_int(first_value(merged, "sim_slot"))
-    wan_state_raw = first_value(merged, "wan_state")
-    connection_state_raw = first_value(merged, "connection_state")
-    connection_type_raw = first_value(merged, "connection_type")
+    wan_state = first_value(merged, "wan_state")
+    connection_state = first_value(merged, "connection_state")
+    connection_type = first_value(merged, "connection_type")
 
+    return {
+        "last_seen": last_seen,
+        "clients_count": parse_int(first_value(merged, "clients_count")),
+        "router_uptime": parse_int(first_value(merged, "router_uptime")),
+        "temperature": parse_float(first_value(merged, "temperature")),
+        "signal_strength": parse_int(first_value(merged, "signal")),
+        "sim_slot": parse_int(first_value(merged, "sim_slot")),
+        "wan_state": str(wan_state) if wan_state is not None else None,
+        "connection_state": str(connection_state) if connection_state is not None else None,
+        "connection_type": str(connection_type) if connection_type is not None else None,
+    }
+
+
+def _parse_location_info(merged: dict[str, Any]) -> dict[str, Any]:
+    """Extract and normalize location/GPS information."""
     latitude = parse_float(
         first_value(
             merged,
@@ -240,21 +264,15 @@ def normalize_device(
             "lng",
         )
     )
-    if latitude is None or longitude is None:
-        list_latitude, list_longitude = _parse_coordinate_pair(
-            first_value(
-                merged,
-                "location.coordinates",
-                "gps.coordinates",
-                "coordinates",
-            )
-        )
-        if latitude is None:
-            latitude = list_latitude
-        if longitude is None:
-            longitude = list_longitude
 
-    location_label_raw = first_value(
+    if latitude is None or longitude is None:
+        list_lat, list_lon = _parse_coordinate_pair(
+            first_value(merged, "location.coordinates", "gps.coordinates", "coordinates")
+        )
+        latitude = latitude if latitude is not None else list_lat
+        longitude = longitude if longitude is not None else list_lon
+
+    label_raw = first_value(
         merged,
         "location.address",
         "location.address.formatted",
@@ -263,31 +281,12 @@ def normalize_device(
         "address",
         "gps.address",
     )
-    location_label = str(location_label_raw) if location_label_raw is not None else None
-    if location_label is None and latitude is not None and longitude is not None:
-        location_label = f"{latitude:.6f}, {longitude:.6f}"
+    label = str(label_raw) if label_raw is not None else None
+    if label is None and latitude is not None and longitude is not None:
+        label = f"{latitude:.6f}, {longitude:.6f}"
 
-    return NormalizedDevice(
-        device_id=device_id_str,
-        name=str(name),
-        model=str(model) if model is not None else None,
-        firmware=str(firmware) if firmware is not None else None,
-        latest_firmware=str(latest_firmware) if latest_firmware is not None else None,
-        stable_firmware=str(stable_firmware) if stable_firmware is not None else None,
-        firmware_update_available=firmware_update_available,
-        serial=str(serial) if serial is not None else None,
-        online=online,
-        last_seen=last_seen,
-        clients_count=clients_count,
-        router_uptime=router_uptime,
-        temperature=temperature,
-        signal_strength=signal_strength,
-        wan_state=str(wan_state_raw) if wan_state_raw is not None else None,
-        connection_state=str(connection_state_raw) if connection_state_raw is not None else None,
-        connection_type=str(connection_type_raw) if connection_type_raw is not None else None,
-        sim_slot=sim_slot,
-        latitude=latitude,
-        longitude=longitude,
-        location_label=location_label,
-        raw=merged,
-    )
+    return {
+        "latitude": latitude,
+        "longitude": longitude,
+        "location_label": label,
+    }
