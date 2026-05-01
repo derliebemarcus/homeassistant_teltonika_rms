@@ -283,7 +283,7 @@ pyobjc-framework-corebluetooth==12.1
     # via bleak
 pyobjc-framework-libdispatch==12.1
     # via bleak
-pyopenssl==26.0.0
+pyopenssl==26.1.0
     # via
     #   acme
     #   homeassistant
