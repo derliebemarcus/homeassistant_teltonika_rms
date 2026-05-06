@@ -152,7 +152,7 @@ habluetooth==6.1.0
     # via home-assistant-bluetooth
 hass-nabucasa==2.2.0
     # via homeassistant
-home-assistant-bluetooth==1.13.1
+home-assistant-bluetooth==2.0.0
     # via homeassistant
 homeassistant==2026.4.4
     # via -r requirements-dev.txt
