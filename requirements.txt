@@ -337,7 +337,7 @@ s3transfer==0.16.0
     # via
     #   -r requirements-dev.txt
     #   boto3
-securetar==2026.4.0
+securetar==2026.4.1
     # via homeassistant
 sentence-stream==1.3.0
     # via hass-nabucasa
