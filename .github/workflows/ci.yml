@@ -109,7 +109,7 @@ jobs:
           python tools/check_coverage_threshold.py coverage.xml 97.1
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: coverage.xml

@@ -90,7 +90,7 @@ btsocket==0.3.0
     # via
     #   bluetooth-auto-recovery
     #   habluetooth
-build==1.4.3
+build==1.5.0
     # via
     #   -r requirements-dev.txt
     #   pip-tools
@@ -152,7 +152,7 @@ habluetooth==6.1.0
     # via home-assistant-bluetooth
 hass-nabucasa==2.2.0
     # via homeassistant
-home-assistant-bluetooth==1.13.1
+home-assistant-bluetooth==2.0.0
     # via homeassistant
 homeassistant==2026.4.4
     # via -r requirements-dev.txt
@@ -283,7 +283,7 @@ pyobjc-framework-corebluetooth==12.1
     # via bleak
 pyobjc-framework-libdispatch==12.1
     # via bleak
-pyopenssl==26.0.0
+pyopenssl==26.1.0
     # via
     #   acme
     #   homeassistant
@@ -302,7 +302,7 @@ pytest==8.4.2
     #   pytest-asyncio
     #   pytest-cov
     #   syrupy
-pytest-asyncio==0.23.8
+pytest-asyncio==1.3.0
     # via -r requirements-dev.txt
 pytest-cov==7.1.0
     # via -r requirements-dev.txt
@@ -337,7 +337,7 @@ s3transfer==0.16.0
     # via
     #   -r requirements-dev.txt
     #   boto3
-securetar==2026.4.0
+securetar==2026.4.1
     # via homeassistant
 sentence-stream==1.3.0
     # via hass-nabucasa
