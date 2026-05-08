@@ -406,7 +406,7 @@ voluptuous==0.15.2
     #   homeassistant
     #   voluptuous-openapi
     #   voluptuous-serialize
-voluptuous-openapi==0.2.0
+voluptuous-openapi==0.3.0
     # via homeassistant
 voluptuous-serialize==2.7.0
     # via homeassistant
