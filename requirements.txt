@@ -295,7 +295,7 @@ pyrfc3339==2.1.0
     # via acme
 pyric==0.1.6.3
     # via bluetooth-auto-recovery
-pytest==8.4.2
+pytest==9.0.3
     # via
     #   -r requirements-dev.txt
     #   mutmut
@@ -388,7 +388,7 @@ uc-micro-py==2.0.0
     # via linkify-it-py
 ulid-transform==2.2.0
     # via homeassistant
-urllib3==2.6.3
+urllib3==2.7.0
     # via
     #   botocore
     #   homeassistant
