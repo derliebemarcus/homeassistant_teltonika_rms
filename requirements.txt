@@ -1,4 +1,4 @@
-acme==5.4.0
+acme==5.6.0
     # via hass-nabucasa
 aiodns==4.0.0
     # via
