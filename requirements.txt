@@ -331,7 +331,7 @@ requests==2.33.1
     #   pycognito
 rich==15.0.0
     # via textual
-ruff==0.15.13
+ruff==0.15.14
     # via -r requirements-dev.txt
 s3transfer==0.16.0
     # via
