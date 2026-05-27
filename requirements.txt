@@ -134,7 +134,7 @@ cryptography==46.0.7
     #   snitun
 envs==1.4
     # via pycognito
-fnv-hash-fast==2.0.0
+fnv-hash-fast==2.0.3
     # via homeassistant
 fnvhash==0.2.1
     # via fnv-hash-fast
