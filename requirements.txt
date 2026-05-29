@@ -423,7 +423,7 @@ yarl==1.23.0
     #   aiohttp
     #   hass-nabucasa
     #   homeassistant
-zeroconf==0.148.0
+zeroconf==0.149.16
     # via
     #   aiohttp-asyncmdnsresolver
     #   homeassistant
