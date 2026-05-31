@@ -253,7 +253,7 @@ pycognito==2024.5.1
     # via hass-nabucasa
 pycparser==3.0
     # via cffi
-pydantic==2.13.3
+pydantic==2.13.4
     # via -r requirements-dev.txt
 pydantic-core==2.46.3
     # via pydantic
