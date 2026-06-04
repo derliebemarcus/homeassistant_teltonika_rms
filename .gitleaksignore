@@ -1,8 +1,5 @@
-title = "gitleaks ignore file"
-
-[allowlist]
-description = "Ignore known revoked or test secrets in history"
-fingerprints = [
-    "f7561b9454a231b1ce511669a0bfbdff97c81b47:temp_input/03_teltonika_PAT.txt:jwt:1",
-    "f7561b9454a231b1ce511669a0bfbdff97c81b47:temp_input/03_teltonika_PAT.txt:jwt:2"
-]
+f7561b9454a231b1ce511669a0bfbdff97c81b47:temp_input/03_teltonika_PAT.txt:jwt:1
+f7561b9454a231b1ce511669a0bfbdff97c81b47:temp_input/03_teltonika_PAT.txt:jwt:2
+42bec918d03a5334922fe8b5fda8100778a6bab6:tests/ha/test_config_flow_extra.py:generic-api-key:116
+42bec918d03a5334922fe8b5fda8100778a6bab6:tests/ha/test_config_flow_extra.py:generic-api-key:205
+42bec918d03a5334922fe8b5fda8100778a6bab6:tests/ha/test_config_flow_extra.py:generic-api-key:219
