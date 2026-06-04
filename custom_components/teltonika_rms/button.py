@@ -38,12 +38,17 @@ class RmsRebootButton(TeltonikaRmsEntity, ButtonEntity):
         super().__init__(bundle, device_id)
         self._attr_unique_id = f"{device_id}_reboot"
 
+    def press(self) -> None:
+        """Handle the button press."""
+        raise NotImplementedError()
+
     async def async_press(self) -> None:
         """Request a reboot for the device."""
         try:
             await self._bundle.api.async_reboot_device(self.device_id)
         except ConfigEntryAuthFailed as err:
             raise HomeAssistantError(
-                "RMS reboot requires device_actions:write permissions. Reauthenticate and try again."
+                "RMS reboot requires device_actions:write permissions. "
+                "Reauthenticate and try again."
             ) from err
         await self._bundle.state.async_request_refresh()

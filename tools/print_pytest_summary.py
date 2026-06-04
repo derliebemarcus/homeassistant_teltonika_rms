@@ -32,7 +32,8 @@ def main() -> int:
         tree = ET.parse(report_path)
     except ET.ParseError:
         print(
-            "[summary] Invalid or empty JUnit XML report. Pytest likely failed before writing results."
+            "[summary] Invalid or empty JUnit XML report. "
+            "Pytest likely failed before writing results."
         )
         return 0
     root = tree.getroot()

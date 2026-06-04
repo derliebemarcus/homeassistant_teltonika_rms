@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -10,7 +11,15 @@ RMS_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 @dataclass(slots=True)
-class NormalizedDevice:
+class TeltonikaRmsRuntime:
+    """Runtime data attached to config entry."""
+
+    bundle: Any
+    remove_service_listener: Callable[[], None] | None = None
+
+
+@dataclass(slots=True, kw_only=True)
+class NormalizedDevice:  # pylint: disable=too-many-instance-attributes
     """A normalized representation of an RMS device."""
 
     device_id: str

@@ -14,4 +14,11 @@ boto3==1.43.17
 botocore==1.42.88
 s3transfer==0.16.0
 textual==8.2.3
+<<<<<<< Updated upstream
 build==1.5.0
+=======
+build==1.4.3
+flake8>=7.0,<8
+pylint>=3.0,<4
+bandit>=1.7,<2
+>>>>>>> Stashed changes

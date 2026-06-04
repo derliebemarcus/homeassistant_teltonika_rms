@@ -1,3 +1,6 @@
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
 from custom_components.teltonika_rms.api import (
@@ -7,6 +10,7 @@ from custom_components.teltonika_rms.api import (
 )
 from custom_components.teltonika_rms.exceptions import RmsApiError
 from custom_components.teltonika_rms.models_api import DeviceDetailResponse
+from custom_components.teltonika_rms.status_channel import _is_device_grouped_terminal
 
 
 def test_validate_contract_payload_error() -> None:
@@ -45,3 +49,34 @@ def test_coerce_state_map_missing_id() -> None:
     assert "dev1" in result
     assert "dev2" in result
     assert len(result) == 2
+
+
+def test_is_device_grouped_terminal_non_list_value() -> None:
+    """Test that _is_device_grouped_terminal returns False if a value is not a list."""
+    # A payload that looks like a device map but contains a non-list value for a numeric key
+    payload = {"123": "not a list"}
+    assert _is_device_grouped_terminal(payload) is False
+
+
+@pytest.mark.asyncio
+async def test_coordinator_wireless_error_handlers(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test coordinator wireless enrichment error handlers."""
+    from homeassistant.exceptions import ConfigEntryAuthFailed
+
+    from custom_components.teltonika_rms.coordinator import StateCoordinator
+    from custom_components.teltonika_rms.exceptions import RmsApiError
+
+    api = MagicMock()
+    # StateCoordinator(hass, api, inventory, options, entry)
+    coordinator = StateCoordinator(MagicMock(), api, MagicMock(), {})
+
+    # 1. Test ConfigEntryAuthFailed
+    api.async_get_device_wireless = AsyncMock(side_effect=ConfigEntryAuthFailed)
+    results: dict[str, dict[str, Any]] = {"dev1": {}}
+    await coordinator._async_enrich_wireless(results, ["dev1"], max_per_cycle=1)
+    assert "clients_count" not in results["dev1"].get("state", {})
+
+    # 2. Test RmsApiError
+    api.async_get_device_wireless = AsyncMock(side_effect=RmsApiError)
+    await coordinator._async_enrich_wireless(results, ["dev1"], max_per_cycle=1)
+    assert "clients_count" not in results["dev1"].get("state", {})

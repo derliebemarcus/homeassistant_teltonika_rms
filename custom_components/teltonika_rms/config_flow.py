@@ -58,6 +58,11 @@ class OAuth2FlowHandler(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, doma
         """Append OAuth scopes during authorize step."""
         return {"scope": " ".join(OAUTH2_SCOPES)}
 
+    @callback
+    def is_matching(self, other_info: Any) -> bool:
+        """Return True if the other info matches this flow."""
+        return False
+
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Offer authentication mode selection."""
         return self.async_show_menu(step_id="user", menu_options=["oauth2", "pat"])
@@ -67,7 +72,7 @@ class OAuth2FlowHandler(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, doma
         return await super().async_step_user(user_input)
 
     async def async_step_pat(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Create entry using PAT token authentication."""
+        """Handle PAT authentication configuration."""
         errors: dict[str, str] = {}
         if user_input is not None:
             token = str(user_input.get(CONF_PAT_TOKEN, "")).strip()

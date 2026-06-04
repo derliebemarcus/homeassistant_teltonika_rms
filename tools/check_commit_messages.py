@@ -30,7 +30,7 @@ def validate_message(message: str) -> str | None:
 
     if len(meaningful) == 1:
         if not CATEGORY_RE.match(meaningful[0]):
-            return "single-line commit messages must start with add:/change:/deprecate:/remove:/fix:/build:/chore:"
+            return "single-line commits must start with a category (e.g. add:, change:, fix:)"
         return None
 
     summary = None
@@ -60,7 +60,9 @@ def validate_message(message: str) -> str | None:
         return "commit message must not be empty"
 
     if not CATEGORY_RE.match(summary) and categorized_body_lines == 0:
-        return "multi-line commit messages require either a categorized summary or at least one categorized body line"
+        return (
+            "multi-line commits require a categorized summary or at least one categorized body line"
+        )
     return None
 
 

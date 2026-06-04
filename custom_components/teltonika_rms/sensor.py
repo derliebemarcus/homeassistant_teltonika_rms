@@ -8,48 +8,54 @@ from typing import Any, ClassVar
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory, UnitOfPower, UnitOfTime
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import TeltonikaRmsRuntime
 from .coordinator import CoordinatorBundle
-from .entity import TeltonikaRmsEntity, is_poe_capable_series
+from .entity import (
+    RmsPortEntity,
+    TeltonikaRmsEntity,
+    async_setup_platform_helper,
+    is_poe_capable_series,
+)
 from .models import NormalizedDevice
 
 PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
+    _hass: HomeAssistant,
+    config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Teltonika RMS sensor entities."""
-    runtime: TeltonikaRmsRuntime = entry.runtime_data
+    """Set up the RMS sensor entities."""
+    runtime: TeltonikaRmsRuntime = config_entry.runtime_data
     bundle: CoordinatorBundle = runtime.bundle
-    known: set[str] = set()
 
-    @callback
-    def _add_new_entities() -> None:
-        new_entities: list[SensorEntity] = []
+    # Trigger initial entity discovery
+    async_setup_platform_helper(
+        config_entry,
+        bundle,
+        async_add_entities,
+        _discover_sensor_entities,
+        [bundle.inventory, bundle.state, bundle.port_scan],
+    )
 
-        for device_id, device_info in bundle.inventory.data.items():
-            # 1. Standard Diagnostic Sensors
-            if normalized := bundle.merged_device(device_id):
-                _add_standard_sensors(bundle, device_id, normalized, known, new_entities)
 
-            # 2. PoE Monitoring Sensors
-            model = device_info.get("model", "UNKNOWN")
-            if is_poe_capable_series(model):
-                _add_poe_sensors(bundle, device_id, model, known, new_entities)
+def _discover_sensor_entities(bundle: CoordinatorBundle, known: set[str]) -> list[SensorEntity]:
+    """Find and return new sensor entities."""
+    new_entities: list[SensorEntity] = []
+    for device_id, device_info in bundle.inventory.data.items():
+        # 1. Standard Diagnostic Sensors
+        if normalized := bundle.merged_device(device_id):
+            _add_standard_sensors(bundle, device_id, normalized, known, new_entities)
 
-        if new_entities:
-            async_add_entities(new_entities)
-
-    _add_new_entities()
-    entry.async_on_unload(bundle.inventory.async_add_listener(_add_new_entities))
-    entry.async_on_unload(bundle.state.async_add_listener(_add_new_entities))
-    entry.async_on_unload(bundle.port_scan.async_add_listener(_add_new_entities))
+        # 2. PoE Monitoring Sensors
+        model = device_info.get("model", "UNKNOWN")
+        if is_poe_capable_series(model):
+            _add_poe_sensors(bundle, device_id, model, known, new_entities)
+    return new_entities
 
 
 def _add_standard_sensors(
@@ -137,7 +143,7 @@ def _apply_scan_results(
         ports[name].update(scan_port)
 
 
-class RmsPoePowerSensor(TeltonikaRmsEntity, SensorEntity):
+class RmsPoePowerSensor(RmsPortEntity, SensorEntity):
     """PoE port power usage in watts."""
 
     _attr_device_class = SensorDeviceClass.POWER
@@ -147,24 +153,14 @@ class RmsPoePowerSensor(TeltonikaRmsEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, bundle: CoordinatorBundle, device_id: str, port_id: str) -> None:
-        super().__init__(bundle, device_id, coordinator=bundle.port_scan)
-        self._port_id = port_id
+        """Initialize the PoE power sensor."""
+        super().__init__(bundle, device_id, port_id)
         self._attr_unique_id = f"{device_id}_{port_id}_poe_w"
         self._attr_name = f"{port_id.upper()} PoE Power"
 
     @property
-    def _port(self) -> dict[str, Any] | None:
-        for port in self._bundle.port_scan.data.get(self.device_id, []):
-            if str(port.get("name") or "").strip() == self._port_id:
-                return port
-        return None
-
-    @property
-    def available(self) -> bool:
-        return super().available
-
-    @property
     def native_value(self) -> float | None:
+        """Return the native value of the sensor."""
         port = self._port
         if port is None:
             return None
@@ -246,10 +242,12 @@ class RmsLastSeenSensor(TeltonikaRmsEntity, SensorEntity):
 
     @classmethod
     def should_create(cls, normalized: NormalizedDevice | None) -> bool:
+        """Determine if this sensor should be created for the device."""
         return normalized is not None and normalized.last_seen is not None
 
     @property
     def native_value(self) -> datetime | None:
+        """Return the state of the sensor."""
         normalized = self._normalized
         return normalized.last_seen if normalized else None
 
@@ -259,11 +257,13 @@ class _OptionalDiagnosticSensor(_BaseDiagnosticSensor):
 
     @classmethod
     def should_create(cls, normalized: NormalizedDevice | None) -> bool:
+        """Determine if this sensor should be created for the device."""
         return normalized is not None and getattr(normalized, cls.entity_key) is not None
 
     @property
     def available(self) -> bool:
-        normalized = self._normalized
+        """Return True if entity is available."""
+        normalized = self._bundle.merged_device(self._device_id)
         return normalized is not None and getattr(normalized, self._key) is not None
 
 
@@ -292,6 +292,7 @@ class RmsRouterUptimeSensor(_OptionalDiagnosticSensor):
 
     @property
     def native_value(self) -> float | None:
+        """Return native value of the sensor."""
         normalized = self._normalized
         if normalized is None or normalized.router_uptime is None:
             return None
@@ -313,6 +314,7 @@ class RmsTemperatureSensor(_OptionalDiagnosticSensor):
 
     @property
     def native_value(self) -> float | None:
+        """Return native value of the sensor."""
         normalized = self._normalized
         if normalized is None or normalized.temperature is None:
             return None
@@ -377,6 +379,7 @@ class RmsSimSlotSensor(_OptionalDiagnosticSensor):
 
     @property
     def native_value(self) -> int | None:
+        """Return the state of the sensor."""
         normalized = self._normalized
         if normalized is None or normalized.sim_slot is None:
             return None

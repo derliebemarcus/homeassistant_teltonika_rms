@@ -8,13 +8,13 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import TeltonikaRmsRuntime
 from .coordinator import CoordinatorBundle
-from .entity import TeltonikaRmsEntity, is_poe_capable_series
+from .entity import TeltonikaRmsEntity, async_setup_platform_helper, is_poe_capable_series
 
 LOGGER = logging.getLogger(__name__)
 
@@ -23,39 +23,42 @@ PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    _hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Teltonika RMS switch entities."""
+    """Configure Teltonika RMS switches."""
     runtime: TeltonikaRmsRuntime = entry.runtime_data
     bundle: CoordinatorBundle = runtime.bundle
-    known: set[str] = set()
 
-    @callback
-    def _add_new_entities() -> None:
-        new_entities: list[SwitchEntity] = []
-        for device_id, device_info in bundle.inventory.data.items():
-            model = device_info.get("model", "UNKNOWN")
-            if not is_poe_capable_series(model):
-                continue
+    # Platform-specific entity discovery via common helper
+    async_setup_platform_helper(
+        entry,
+        bundle,
+        async_add_entities,
+        _discover_new_entities,
+        [bundle.inventory, bundle.port_config, bundle.port_scan],
+    )
 
-            port_configs = _get_device_port_configs(device_id, model, bundle)
 
-            for port_id, port in port_configs.items():
-                if _supports_poe(port):
-                    unique_poe = f"{device_id}_{port_id}_poe"
-                    if unique_poe not in known:
-                        known.add(unique_poe)
-                        new_entities.append(RmsPoeSwitch(bundle, device_id, port_id))
+def _discover_new_entities(bundle: CoordinatorBundle, known: set[str]) -> list[SwitchEntity]:
+    """Find and return new switch entities not yet in 'known'."""
+    new_entities: list[SwitchEntity] = []
+    for device_id, device_info in bundle.inventory.data.items():
+        model = device_info.get("model", "UNKNOWN")
+        if not is_poe_capable_series(model):
+            continue
 
-        if new_entities:
-            async_add_entities(new_entities)
+        port_configs = _get_device_port_configs(device_id, model, bundle)
 
-    _add_new_entities()
-    entry.async_on_unload(bundle.inventory.async_add_listener(_add_new_entities))
-    entry.async_on_unload(bundle.port_config.async_add_listener(_add_new_entities))
-    entry.async_on_unload(bundle.port_scan.async_add_listener(_add_new_entities))
+        for port_id, port in port_configs.items():
+            if _supports_poe(port):
+                unique_poe = f"{device_id}_{port_id}_poe"
+                if unique_poe not in known:
+                    known.add(unique_poe)
+                    new_entities.append(RmsPoeSwitch(bundle, device_id, port_id))
+
+    return new_entities
 
 
 def _get_device_port_configs(
@@ -137,6 +140,14 @@ class RmsPoeSwitch(TeltonikaRmsEntity, SwitchEntity):
             "isolated": port.get("isolated"),
         }
 
+    def turn_on(self, **kwargs: Any) -> None:
+        """Turn the entity on."""
+        raise NotImplementedError()
+
+    def turn_off(self, **kwargs: Any) -> None:
+        """Turn the entity off."""
+        raise NotImplementedError()
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self._async_set_poe(True)
 
@@ -148,9 +159,9 @@ class RmsPoeSwitch(TeltonikaRmsEntity, SwitchEntity):
             await self._bundle.api.async_set_device_port_poe(self.device_id, self._port_id, enabled)
         except ConfigEntryAuthFailed as err:
             raise HomeAssistantError(
-                "RMS PoE control failed. The device model may not support RMS remote PoE configuration, "
-                "or you may need to reauthenticate your Home Assistant integration to activate the "
-                "device_configurations:write permission."
+                "RMS PoE control failed. The device model may not support RMS remote PoE "
+                "configuration, or you may need to reauthenticate your Home Assistant "
+                "integration to activate the device_configurations:write permission."
             ) from err
         await self._bundle.port_config.async_request_refresh()
 

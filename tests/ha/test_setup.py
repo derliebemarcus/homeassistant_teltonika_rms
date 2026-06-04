@@ -57,7 +57,7 @@ async def test_async_setup_entry_api_failure(hass: HomeAssistant) -> None:
         mock_api = mock_api_class.return_value
         mock_api.async_validate_connection = AsyncMock(side_effect=Exception("API failure"))
 
-        with pytest.raises(ConfigEntryNotReady, match="Failed to initialize Teltonika RMS"):
+        with pytest.raises(ConfigEntryNotReady, match="Unexpected error during initialization"):
             await async_setup_entry(hass, mock_entry)
 
 

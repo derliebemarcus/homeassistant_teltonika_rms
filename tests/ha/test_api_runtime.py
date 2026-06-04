@@ -75,18 +75,13 @@ class FakeAuthClient:
         self,
         method: str,
         url: str,
-        *,
-        params: dict[str, Any] | None,
-        json: dict[str, Any] | None,
-        timeout: int,
+        **kwargs: Any,
     ) -> ClientResponse:
         self.calls.append(
             {
                 "method": method,
                 "url": url,
-                "params": params,
-                "json": json,
-                "timeout": timeout,
+                **kwargs,
             }
         )
         response = self._responses.pop(0)
@@ -96,6 +91,10 @@ class FakeAuthClient:
 
     async def async_get_access_token(self) -> str | None:
         return self._token
+
+    def async_get_auth_header(self) -> dict[str, str]:
+        """Return fake auth headers."""
+        return {"Authorization": f"Bearer {self._token}"}
 
 
 class FakeSession:
@@ -877,7 +876,7 @@ def test_api_get_device_state_handles_non_dict_state_response() -> None:
 
 
 def test_api_get_device_ethernet_ports_returns_none_on_no_data_no_meta() -> None:
-    """Test that async_get_device_ethernet_ports returns None when both data and meta are missing."""
+    """Test that async_get_device_ethernet_ports returns None when data and meta are missing."""
     auth = FakeAuthClient([FakeResponse(200, {"success": True, "data": None, "meta": {}})])
     client = RmsApiClient(auth, _matrix())
     assert asyncio.run(client.async_get_device_ethernet_ports("42")) is None

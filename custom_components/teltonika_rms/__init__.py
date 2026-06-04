@@ -4,10 +4,20 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
+import voluptuous as vol
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import aiohttp_client, config_entry_oauth2_flow
+from homeassistant.helpers.typing import ConfigType
+
+from . import api as api_mod
+from . import coordinator as coordinator_mod
+from . import endpoint_matrix, status_channel
 from .const import (
     AUTH_MODE_OAUTH2,
     AUTH_MODE_PAT,
@@ -17,63 +27,50 @@ from .const import (
     DEFAULT_OPTIONS,
     DEFAULT_SPEC_PATH,
     DOMAIN,
+    SERVICE_GET_DEVICE_HISTORY,
     SERVICE_REFRESH,
 )
+from .exceptions import RmsApiError
+from .models import TeltonikaRmsRuntime
 
-SERVICE_GET_DEVICE_HISTORY = "get_device_history"
+__all__ = [
+    "DOMAIN",
+    "SERVICE_GET_DEVICE_HISTORY",
+    "TeltonikaRmsRuntime",
+]
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
+    pass
 
 LOGGER = logging.getLogger(__name__)
 
-try:
-    from homeassistant.const import Platform
-
-    PLATFORMS: tuple[str, ...] = (
-        Platform.BINARY_SENSOR,
-        Platform.SENSOR,
-        Platform.DEVICE_TRACKER,
-        Platform.BUTTON,
-        Platform.SWITCH,
-        Platform.UPDATE,
-    )
-except ModuleNotFoundError:
-    PLATFORMS = ("binary_sensor", "sensor", "device_tracker", "button", "switch", "update")
+PLATFORMS: tuple[Platform, ...] = (
+    Platform.BINARY_SENSOR,
+    Platform.SENSOR,
+    Platform.DEVICE_TRACKER,
+    Platform.BUTTON,
+    Platform.SWITCH,
+    Platform.UPDATE,
+)
 
 
-@dataclass(slots=True)
-class TeltonikaRmsRuntime:
-    """Runtime data attached to config entry."""
-
-    bundle: Any
-    remove_service_listener: Callable[[], None] | None = None
+async def async_setup(_hass: HomeAssistant, _config: ConfigType) -> bool:
+    """Set up Teltonika RMS."""
+    return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: Any) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Teltonika RMS from config entry."""
-    from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
-    from homeassistant.helpers import config_entry_oauth2_flow
-    from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
-    from .api import OAuth2RmsAuthClient, PatRmsAuthClient, RmsApiClient, RmsAuthClient
-    from .coordinator import (
-        CoordinatorBundle,
-        InventoryCoordinator,
-        PortConfigCoordinator,
-        PortScanCoordinator,
-        StateCoordinator,
-    )
-    from .endpoint_matrix import load_endpoint_matrix
-    from .status_channel import RmsStatusChannelManager
 
     auth_mode = str(entry.data.get(CONF_AUTH_MODE, AUTH_MODE_OAUTH2))
-    auth_client: RmsAuthClient
+    auth_client: api_mod.RmsAuthClient
     if auth_mode == AUTH_MODE_PAT:
         pat_token = str(entry.data.get(CONF_PAT_TOKEN, "")).strip()
         if not pat_token:
             raise ConfigEntryNotReady("PAT token missing")
-        auth_client = PatRmsAuthClient(async_get_clientsession(hass), pat_token)
+        auth_client = api_mod.PatRmsAuthClient(
+            aiohttp_client.async_get_clientsession(hass), pat_token
+        )
     else:
         try:
             implementation = await config_entry_oauth2_flow.async_get_config_entry_implementation(
@@ -82,23 +79,61 @@ async def async_setup_entry(hass: HomeAssistant, entry: Any) -> bool:
         except config_entry_oauth2_flow.ImplementationUnavailableError as err:
             raise ConfigEntryNotReady(f"OAuth implementation unavailable: {err}") from err
         oauth_session = config_entry_oauth2_flow.OAuth2Session(hass, entry, implementation)
-        auth_client = OAuth2RmsAuthClient(oauth_session)
+        auth_client = api_mod.OAuth2RmsAuthClient(oauth_session)
 
     spec_path = str(entry.options.get(CONF_SPEC_PATH, DEFAULT_SPEC_PATH))
-    endpoint_matrix = await hass.async_add_executor_job(load_endpoint_matrix, spec_path)
+    matrix = await hass.async_add_executor_job(endpoint_matrix.load_endpoint_matrix, spec_path)
 
-    api = RmsApiClient(
+    api = api_mod.RmsApiClient(
         auth=auth_client,
-        endpoint_matrix=endpoint_matrix,
+        endpoint_matrix=matrix,
     )
-    status_manager = RmsStatusChannelManager(api)
+    status_manager = status_channel.RmsStatusChannelManager(api)
     api.set_status_channel_manager(status_manager)
 
-    inventory = InventoryCoordinator(hass, api, _merged_options(entry), entry)
-    state = StateCoordinator(hass, api, inventory, _merged_options(entry), entry)
-    port_scan = PortScanCoordinator(hass, api, inventory, entry)
-    port_config = PortConfigCoordinator(hass, api, inventory, entry)
-    bundle = CoordinatorBundle(
+    bundle = _initialize_bundle(hass, api, entry, status_manager)
+    entry.runtime_data = TeltonikaRmsRuntime(bundle=bundle)
+
+    try:
+        await api.async_validate_connection()
+        await bundle.inventory.async_config_entry_first_refresh()
+        await bundle.state.async_config_entry_first_refresh()
+    except ConfigEntryAuthFailed:
+        raise
+    except RmsApiError as err:
+        raise ConfigEntryNotReady(f"Failed to connect to Teltonika RMS: {err}") from err
+    except Exception as err:
+        raise ConfigEntryNotReady(f"Unexpected error during initialization: {err}") from err
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+    hass.async_create_task(
+        _async_refresh_optional_coordinator("ethernet port scan", bundle.port_scan)
+    )
+    hass.async_create_task(
+        _async_refresh_optional_coordinator("port configuration", bundle.port_config)
+    )
+
+    _register_services(hass)
+
+    return True
+
+
+def _initialize_bundle(
+    hass: HomeAssistant,
+    api: api_mod.RmsApiClient,
+    entry: ConfigEntry,
+    status_manager: status_channel.RmsStatusChannelManager,
+) -> coordinator_mod.CoordinatorBundle:
+    """Initialize all coordinators and wrap them in a bundle."""
+    inventory = coordinator_mod.InventoryCoordinator(hass, api, _merged_options(entry), entry)
+    state = coordinator_mod.StateCoordinator(
+        hass, api, inventory, {"options": _merged_options(entry), "entry": entry}
+    )
+    port_scan = coordinator_mod.PortScanCoordinator(hass, api, inventory, entry)
+    port_config = coordinator_mod.PortConfigCoordinator(hass, api, inventory, entry)
+
+    return coordinator_mod.CoordinatorBundle(
         inventory=inventory,
         state=state,
         port_scan=port_scan,
@@ -107,22 +142,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: Any) -> bool:
         api=api,
     )
 
-    entry.runtime_data = TeltonikaRmsRuntime(bundle=bundle)
 
-    try:
-        await api.async_validate_connection()
-        await inventory.async_config_entry_first_refresh()
-        await state.async_config_entry_first_refresh()
-    except ConfigEntryAuthFailed:
-        raise
-    except Exception as err:
-        raise ConfigEntryNotReady(f"Failed to initialize Teltonika RMS: {err}") from err
-
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
-    hass.async_create_task(_async_refresh_optional_coordinator("ethernet port scan", port_scan))
-    hass.async_create_task(_async_refresh_optional_coordinator("port configuration", port_config))
-
+def _register_services(hass: HomeAssistant) -> None:
+    """Register custom services for the integration."""
     if not hass.services.has_service(DOMAIN, SERVICE_REFRESH):
         hass.services.async_register(DOMAIN, SERVICE_REFRESH, _build_refresh_handler(hass))
 
@@ -131,10 +153,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: Any) -> bool:
             DOMAIN, SERVICE_GET_DEVICE_HISTORY, _build_history_handler(hass)
         )
 
-    return True
 
-
-async def async_unload_entry(hass: HomeAssistant, entry: Any) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Teltonika RMS entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if not unload_ok:
@@ -146,12 +166,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: Any) -> bool:
     return True
 
 
-async def async_reload_entry(hass: HomeAssistant, entry: Any) -> None:
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)
 
 
 def _build_refresh_handler(hass: HomeAssistant) -> Callable[[Any], Coroutine[Any, Any, None]]:
+    """Build the refresh service handler."""
     from .coordinator import async_refresh_all
 
     async def _async_handle_refresh(call: Any) -> None:
@@ -170,14 +191,10 @@ def _parse_datetime_string(value: str) -> datetime:
     try:
         return datetime.fromisoformat(value).replace(tzinfo=UTC)
     except ValueError as err:
-        from voluptuous import Invalid
-
-        raise Invalid(f"Invalid datetime format: {value}") from err
+        raise vol.Invalid(f"Invalid datetime format: {value}") from err
 
 
 def _get_history_schema() -> Any:
-    import voluptuous as vol
-
     return vol.Schema(
         {
             vol.Required("device_id"): str,
@@ -191,14 +208,12 @@ def _get_history_schema() -> Any:
 
 
 def _build_history_handler(hass: HomeAssistant) -> Callable[[Any], Coroutine[Any, Any, None]]:
-    from .api import RmsApiClient
-
     history_schema = _get_history_schema()
 
     async def _async_handle_get_device_history(call: Any) -> None:
         try:
             validated_data = history_schema(call.data)
-        except Exception as err:  # vol.Invalid
+        except vol.Invalid as err:
             LOGGER.error("Invalid service call data for get_device_history: %s", err)
             return
 
@@ -222,11 +237,11 @@ def _build_history_handler(hass: HomeAssistant) -> Callable[[Any], Coroutine[Any
             runtime: TeltonikaRmsRuntime | None = getattr(entry, "runtime_data", None)
             if runtime is None:
                 continue
-            api: RmsApiClient = runtime.bundle.api
+            api: api_mod.RmsApiClient = runtime.bundle.api
 
             try:
                 history_data = await api.async_get_device_history(
-                    device_id=device_id,
+                    device_id,
                     from_time=from_time,
                     to_time=to_time,
                     interval=interval,

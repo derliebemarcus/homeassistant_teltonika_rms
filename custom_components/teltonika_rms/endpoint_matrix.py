@@ -33,14 +33,17 @@ class EndpointMatrix:
     endpoints: dict[str, EndpointSpec]
 
     def path_for(self, key: str) -> str | None:
+        """Get the path for a given endpoint key."""
         spec = self.endpoints.get(key)
         return spec.path if spec else None
 
     def scopes_for(self, key: str) -> tuple[str, ...]:
+        """Get the scopes for a given endpoint key."""
         spec = self.endpoints.get(key)
         return spec.scopes if spec else ()
 
     def format_path(self, key: str, **params: str) -> str | None:
+        """Format a path by replacing URL parameters."""
         path = self.path_for(key)
         if path is None:
             return None
@@ -89,6 +92,7 @@ def _load_frozen_matrix() -> EndpointMatrix:
 
 
 def _matrix_from_openapi(spec: dict[str, Any], frozen: EndpointMatrix) -> dict[str, EndpointSpec]:
+    """Build endpoint matrix from OpenAPI spec, using frozen matrix as fallback."""
     paths = spec.get("paths")
     if not isinstance(paths, dict):
         return frozen.endpoints
@@ -109,23 +113,7 @@ def _matrix_from_openapi(spec: dict[str, Any], frozen: EndpointMatrix) -> dict[s
         if not isinstance(operation, dict):
             continue
 
-        lower_path = path.lower()
-        if "devices" not in lower_path:
-            continue
-
-        scopes = _extract_scopes(operation, security)
-        normalized = EndpointSpec(path=path, scopes=scopes, polling=_polling_hint(path))
-
-        if re.search(r"/devices/?$", lower_path):
-            candidates["devices_list"].append(normalized)
-        elif re.search(r"/devices/\{[^}]+\}/status/?$", lower_path):
-            candidates["device_state_single"].append(normalized)
-        elif re.search(r"/devices/\{[^}]+\}/location/?$", lower_path):
-            candidates["device_location"].append(normalized)
-        elif _is_aggregate_status_candidate(path):
-            candidates["device_state_aggregate"].append(normalized)
-        elif re.search(r"/devices/\{[^}]+\}/?$", lower_path):
-            candidates["device_detail"].append(normalized)
+        _categorize_endpoint(path, operation, security, candidates)
 
     resolved: dict[str, EndpointSpec] = {}
     for key, frozen_spec in frozen.endpoints.items():
@@ -135,20 +123,53 @@ def _matrix_from_openapi(spec: dict[str, Any], frozen: EndpointMatrix) -> dict[s
     return resolved
 
 
+def _categorize_endpoint(
+    path: str,
+    operation: dict[str, Any],
+    global_security: list[Any],
+    candidates: dict[str, list[EndpointSpec]],
+) -> None:
+    """Categorize an OpenAPI operation into potential endpoint candidates."""
+    lower_path = path.lower()
+    if "devices" not in lower_path:
+        return
+
+    scopes = _extract_scopes(operation, global_security)
+    spec = EndpointSpec(path=path, scopes=scopes, polling=_polling_hint(path))
+
+    if re.search(r"/devices/?$", lower_path):
+        candidates["devices_list"].append(spec)
+    elif re.search(r"/devices/\{[^}]+\}/status/?$", lower_path):
+        candidates["device_state_single"].append(spec)
+    elif re.search(r"/devices/\{[^}]+\}/location/?$", lower_path):
+        candidates["device_location"].append(spec)
+    elif _is_aggregate_status_candidate(path):
+        candidates["device_state_aggregate"].append(spec)
+    elif re.search(r"/devices/\{[^}]+\}/?$", lower_path):
+        candidates["device_detail"].append(spec)
+
+
 def _extract_scopes(operation: dict[str, Any], global_security: list[Any]) -> tuple[str, ...]:
-    operation_security = operation.get("security", global_security)
-    if not isinstance(operation_security, list):
+    """Extract required OAuth2 scopes from an operation or global security definition."""
+    security = operation.get("security", global_security)
+    if not isinstance(security, list):
         return ()
 
     scopes: list[str] = []
-    for item in operation_security:
-        if not isinstance(item, dict):
-            continue
-        for raw_scopes in item.values():
-            if isinstance(raw_scopes, list):
-                for scope in raw_scopes:
-                    if isinstance(scope, str) and scope not in scopes:
-                        scopes.append(scope)
+    seen: set[str] = set()
+
+    # Flatten nested security structure to reduce complexity
+    raw_scope_items: list[list[Any]] = []
+    for item in security:
+        if isinstance(item, dict):
+            raw_scope_items.extend(v for v in item.values() if isinstance(v, list))
+
+    for scope_list in raw_scope_items:
+        for s in scope_list:
+            if isinstance(s, str) and s not in seen:
+                seen.add(s)
+                scopes.append(s)
+
     return tuple(scopes)
 
 

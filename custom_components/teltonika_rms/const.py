@@ -46,6 +46,7 @@ REQUEST_BUDGET_HEADROOM = 0.80
 
 SERVICE_REFRESH = "refresh"
 SERVICE_REBOOT = "reboot"
+SERVICE_GET_DEVICE_HISTORY = "get_device_history"
 
 UPDATE_PLATFORMS: tuple[str, ...] = (
     "binary_sensor",

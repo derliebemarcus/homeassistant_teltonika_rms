@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 REPORT_FILE="$(mktemp "${TMPDIR:-/tmp}/teltonika-rms-pytest-XXXXXX.xml")"
 VENV_DIR="$ROOT/.venv-test"
-COVERAGE_MINIMUM="97.79"
+COVERAGE_MINIMUM="98.17"
 
 pick_bootstrap_python() {
   if command -v python3.14 >/dev/null 2>&1; then
@@ -72,6 +72,9 @@ ensure_package "pip_audit" "pip-audit"
 ensure_package "piptools" "pip-tools"
 ensure_package "pydantic" "pydantic>=2.0"
 ensure_package "syrupy" "syrupy>=4.0"
+ensure_package "flake8" "flake8>=7.0"
+ensure_package "pylint" "pylint>=3.0"
+ensure_package "bandit" "bandit>=1.7"
 
 echo "[pre-commit] Checking lockfile consistency..."
 if ! "$PYTHON_BIN" -m piptools compile --no-header requirements-dev.txt -o /tmp/requirements.txt.tmp >/dev/null 2>&1; then
@@ -158,6 +161,13 @@ if [ "$PYTEST_EXIT" -ne 0 ]; then
   exit 1
 fi
 
+echo "[pre-commit] Generating analysis reports for SonarQube..."
+"$PYTHON_BIN" -m ruff check . --output-format json --output-file ruff-report.json --exclude .venv-test --exclude .venv || true
+"$PYTHON_BIN" -m mypy . --exclude .venv-test --exclude .venv > mypy-report.txt || true
+"$PYTHON_BIN" -m flake8 . --exit-zero --exclude .venv-test,.venv > flake8-report.txt
+"$PYTHON_BIN" -m pylint custom_components/teltonika_rms --exit-zero > pylint-report.txt
+"$PYTHON_BIN" -m bandit -r custom_components/teltonika_rms -f json -o bandit-report.json --exit-zero
+
 echo "[pre-commit] Running SonarQube Analysis..."
 
 # Ensure common paths are included (especially for sonar-scanner)
@@ -190,7 +200,12 @@ if ! sonar-scanner \
   -Dsonar.python.version=3.14 \
   -Dsonar.sources=custom_components/teltonika_rms \
   -Dsonar.tests=tests \
-  -Dsonar.python.coverage.reportPaths=coverage.xml; then
+  -Dsonar.python.coverage.reportPaths=coverage.xml \
+  -Dsonar.python.flake8.reportPaths=flake8-report.txt \
+  -Dsonar.python.mypy.reportPaths=mypy-report.txt \
+  -Dsonar.python.pylint.reportPaths=pylint-report.txt \
+  -Dsonar.python.ruff.reportPaths=ruff-report.json \
+  -Dsonar.python.bandit.reportPaths=bandit-report.json; then
   echo "[pre-commit] SonarQube Quality Gate FAILED. Commit blocked."
   exit 1
 fi

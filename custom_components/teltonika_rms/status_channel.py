@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from .const import STATUS_BASE_URL
 
@@ -44,6 +44,7 @@ class RmsStatusChannelManager:
         channel_id: str,
         timeout_seconds: int,
     ) -> dict[str, Any] | None:
+        """Wait for channel result via Socket.IO."""
         if socketio is None:
             return None
 
@@ -61,16 +62,29 @@ class RmsStatusChannelManager:
             msg_channel = message.get("channel") or message.get("id")
             if msg_channel and str(msg_channel) != channel_id:
                 return
-            if _is_terminal(message):
-                if not future.done():
-                    future.set_result(message)
+            if _is_terminal(message) and not future.done():
+                future.set_result(message)
 
         client.on("message")(_handle)
         client.on("status")(_handle)
         client.on(channel_id)(_handle)
 
-        connect_url = f"{STATUS_BASE_URL}?token={token}"
+        return await self._async_connect_and_subscribe(
+            client,
+            channel_id,
+            token,
+            {"timeout": timeout_seconds, "future": future},
+        )
 
+    async def _async_connect_and_subscribe(
+        self,
+        client: socketio.AsyncClient,
+        channel_id: str,
+        token: str,
+        wait_options: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Connect to the status socket and subscribe to the channel."""
+        connect_url = f"{STATUS_BASE_URL}?token={token}"
         try:
             await client.connect(
                 connect_url,
@@ -81,12 +95,11 @@ class RmsStatusChannelManager:
             )
             try:
                 await client.emit("subscribe", {"channel": channel_id})
-            except Exception:  # pragma: no cover - server-specific
-                LOGGER.debug(
-                    "RMS status socket subscribe event not acknowledged for %s", channel_id
-                )
-            return await asyncio.wait_for(future, timeout=timeout_seconds)
-        except Exception as err:  # pragma: no cover - network dependent
+            except Exception:  # pylint: disable=broad-except
+                LOGGER.debug("RMS socket subscribe event not acknowledged for %s", channel_id)
+
+            return await asyncio.wait_for(wait_options["future"], timeout=wait_options["timeout"])
+        except Exception as err:  # pylint: disable=broad-except
             LOGGER.debug("RMS status socket fallback for %s: %s", channel_id, err)
             return None
         finally:
@@ -102,8 +115,6 @@ class RmsStatusChannelManager:
         while datetime.now(tz=UTC) < deadline:
             payload = await self._api_client.async_poll_status_channel(channel_id)
             if payload and _is_terminal(payload):
-                from typing import cast
-
                 return cast(dict[str, Any], payload)
             await asyncio.sleep(2)
         return None
@@ -116,12 +127,22 @@ def _coerce_payload(payload: Any) -> dict[str, Any] | None:
 
 
 def _is_terminal(payload: dict[str, Any]) -> bool:
+    """Check if the payload represents a terminal state (completion or error)."""
     if payload.get("completed") is True:
         return True
 
     # Check root-level keys
+    if _has_terminal_status(payload):
+        return True
+
+    # Check device-ID grouped payloads (e.g. from configurator or port-scan)
+    return _is_device_grouped_terminal(payload)
+
+
+def _has_terminal_status(data: dict[str, Any]) -> bool:
+    """Check if a dictionary contains a terminal status or response_state."""
     for key in ("status", "response_state"):
-        status = payload.get(key)
+        status = data.get(key)
         if isinstance(status, str) and status.lower() in {
             "completed",
             "done",
@@ -133,27 +154,23 @@ def _is_terminal(payload: dict[str, Any]) -> bool:
             "success",
         }:
             return True
+    return False
 
-    # Check device-ID grouped payloads (e.g. from configurator or port-scan)
+
+def _is_device_grouped_terminal(payload: dict[str, Any]) -> bool:
+    """Check if device-ID grouped payloads contain a terminal event."""
     # The payload is a dict mapping device IDs to lists of events
-    if all(isinstance(v, list) for k, v in payload.items() if str(k).isdigit() or "-" in str(k)):
-        for events in payload.values():
-            if not isinstance(events, list) or not events:
-                continue
-            last_event = events[-1]
-            if isinstance(last_event, dict):
-                for key in ("status", "response_state"):
-                    status = last_event.get(key)
-                    if isinstance(status, str) and status.lower() in {
-                        "completed",
-                        "done",
-                        "finished",
-                        "failed",
-                        "error",
-                        "expired",
-                        "cancelled",
-                        "success",
-                    }:
-                        return True
+    is_device_map = all(
+        isinstance(v, list) for k, v in payload.items() if str(k).isdigit() or "-" in str(k)
+    )
+    if not is_device_map:
+        return False
+
+    for events in payload.values():
+        if not isinstance(events, list) or not events:
+            continue
+        last_event = events[-1]
+        if isinstance(last_event, dict) and _has_terminal_status(last_event):
+            return True
 
     return False

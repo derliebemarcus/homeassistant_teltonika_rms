@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import random
+import secrets
 from collections.abc import Iterable
 from datetime import UTC, datetime
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
-from aiohttp import ClientError, ClientResponse, ClientSession, ClientTimeout
+from aiohttp import ClientError, ClientResponse, ClientSession
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.config_entry_oauth2_flow import OAuth2Session
+from homeassistant.helpers import config_entry_oauth2_flow
 from pydantic import ValidationError
+
+if TYPE_CHECKING:
+    pass
 
 from .const import API_BASE_URL, MAX_MONTHLY_REQUESTS, REQUEST_BUDGET_HEADROOM, STATUS_BASE_URL
 from .endpoint_matrix import EndpointMatrix
@@ -40,38 +43,34 @@ class RmsAuthClient(Protocol):
         self,
         method: str,
         url: str,
-        *,
-        params: dict[str, Any] | None,
-        json: dict[str, Any] | None,
-        timeout: int,
+        **kwargs: Any,
     ) -> ClientResponse:
         """Perform HTTP request with auth attached."""
 
     async def async_get_access_token(self) -> str | None:
         """Return bearer token for status socket usage."""
 
+    def async_get_auth_header(self) -> dict[str, str]:
+        """Return authentication headers."""
+
 
 class OAuth2RmsAuthClient:
     """OAuth2 auth provider backed by Home Assistant OAuth2Session."""
 
-    def __init__(self, oauth_session: OAuth2Session) -> None:
+    def __init__(self, oauth_session: config_entry_oauth2_flow.OAuth2Session) -> None:
+        """Initialize the OAuth2 auth client."""
         self._oauth_session = oauth_session
 
     async def async_request(
         self,
         method: str,
         url: str,
-        *,
-        params: dict[str, Any] | None,
-        json: dict[str, Any] | None,
-        timeout: int,
+        **kwargs: Any,
     ) -> ClientResponse:
         return await self._oauth_session.async_request(
             method,
             url,
-            params=params,
-            json=json,
-            timeout=timeout,
+            **kwargs,
         )
 
     async def async_get_access_token(self) -> str | None:
@@ -79,11 +78,16 @@ class OAuth2RmsAuthClient:
         token = self._oauth_session.token.get("access_token")
         return token if isinstance(token, str) else None
 
+    def async_get_auth_header(self) -> dict[str, str]:
+        """Return authentication headers."""
+        return {"Authorization": f"Bearer {self._oauth_session.token.get('access_token')}"}
+
 
 class PatRmsAuthClient:
     """PAT auth provider using static bearer token."""
 
     def __init__(self, session: ClientSession, pat_token: str) -> None:
+        """Initialize the PAT auth client."""
         self._session = session
         self._pat_token = pat_token.strip()
 
@@ -91,27 +95,25 @@ class PatRmsAuthClient:
         self,
         method: str,
         url: str,
-        *,
-        params: dict[str, Any] | None,
-        json: dict[str, Any] | None,
-        timeout: int,
+        **kwargs: Any,
     ) -> ClientResponse:
-        headers = {
-            "Authorization": f"Bearer {self._pat_token}",
-        }
+        headers = kwargs.pop("headers", {})
+        headers["Authorization"] = f"Bearer {self._pat_token}"
         return await self._session.request(
             method,
             url,
-            params=params,
-            json=json,
-            timeout=ClientTimeout(total=timeout),
             headers=headers,
+            **kwargs,
         )
 
     async def async_get_access_token(self) -> str | None:
         """Return bearer token."""
         await asyncio.sleep(0)
         return self._pat_token
+
+    def async_get_auth_header(self) -> dict[str, str]:
+        """Return authentication headers."""
+        return {"Authorization": f"Bearer {self._pat_token}"}
 
 
 class RmsApiClient:
@@ -233,14 +235,23 @@ class RmsApiClient:
     async def async_get_device_history(
         self,
         device_id: str,
-        from_time: datetime,
-        to_time: datetime,
-        interval: str,
-        *,
-        config_id: int | None = None,
-        keys: list[str] | None = None,
+        **kwargs: Any,
     ) -> list[dict[str, Any]]:
         """Fetch historical monitoring data for a device."""
+        from_time = kwargs.get("from_time")
+        to_time = kwargs.get("to_time")
+        interval = kwargs.get("interval", "1h")
+        config_id = kwargs.get("config_id")
+        keys = kwargs.get("keys")
+
+        if not from_time or not to_time:
+            # Try time_range tuple for backward compatibility with some tests
+            time_range = kwargs.get("time_range")
+            if time_range:
+                from_time, to_time = time_range
+
+        if not from_time or not to_time:
+            return []
         history_path = self._matrix.format_path("device_history", id=device_id)
         if not history_path:
             return []
@@ -398,25 +409,23 @@ class RmsApiClient:
         self,
         method: str,
         path_or_url: str,
-        *,
-        params: dict[str, Any] | None = None,
-        json_body: dict[str, Any] | None = None,
-        absolute_url: bool = False,
-        allow_not_found: bool = False,
+        **kwargs: Any,
     ) -> tuple[Any, dict[str, Any]]:
         """Perform RMS API request with retries and envelope parsing."""
+        absolute_url = kwargs.pop("absolute_url", False)
         url = path_or_url if absolute_url else f"{API_BASE_URL}{path_or_url}"
 
         for attempt in range(_MAX_RETRIES + 1):
             self._increment_request_counter()
             try:
                 return await self._async_perform_request_attempt(
-                    method, url, params, json_body, attempt, allow_not_found
+                    method,
+                    url,
+                    attempt,
+                    kwargs,
                 )
             except _RetryRequest:
                 continue
-            except ConfigEntryAuthFailed:
-                raise
             except ClientError as err:
                 if attempt >= _MAX_RETRIES:
                     raise RmsApiError(f"RMS network error: {err}") from err
@@ -428,11 +437,13 @@ class RmsApiClient:
         self,
         method: str,
         url: str,
-        params: dict[str, Any] | None,
-        json_body: dict[str, Any] | None,
         attempt: int,
-        allow_not_found: bool,
+        options: dict[str, Any],
     ) -> tuple[Any, dict[str, Any]]:
+        params = options.get("params")
+        json_body = options.get("json_body")
+        allow_not_found = options.get("allow_not_found", False)
+
         response: ClientResponse | None = None
         try:
             async with asyncio.timeout(_DEFAULT_TIMEOUT):
@@ -492,9 +503,10 @@ class RmsApiClient:
 
 
 async def _safe_json(response: ClientResponse) -> Any:
+    """Safely parse JSON or return raw text if parsing fails."""
     try:
         return await response.json(content_type=None)
-    except Exception:
+    except (ClientError, ValueError, TypeError):
         text = await response.text()
         return {"raw": text}
 
@@ -549,24 +561,35 @@ def _coerce_list(data: Any) -> list[dict[str, Any]]:
 
 
 def _coerce_state_map(data: Any) -> dict[str, dict[str, Any]]:
+    """Coerce various RMS state response shapes into a device-keyed dictionary."""
     if isinstance(data, dict):
-        if "devices" in data and isinstance(data["devices"], list):
-            return _coerce_state_map(data["devices"])
-        if all(isinstance(value, dict) for value in data.values()):
-            return {str(key): value for key, value in data.items()}
-        if "id" in data:
-            return {str(data["id"]): data}
+        return _coerce_dict_state(data)
     if isinstance(data, list):
-        result: dict[str, dict[str, Any]] = {}
-        for item in data:
-            if not isinstance(item, dict):
-                continue
-            identifier = item.get("id") or item.get("device_id") or item.get("deviceId")
-            if identifier is None:
-                continue
-            result[str(identifier)] = item
-        return result
+        return _coerce_list_state(data)
     return {}
+
+
+def _coerce_dict_state(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Coerce dictionary-shaped state data."""
+    if "devices" in data and isinstance(data["devices"], list):
+        return _coerce_state_map(data["devices"])
+    if all(isinstance(value, dict) for value in data.values()):
+        return {str(key): value for key, value in data.items()}
+    if "id" in data:
+        return {str(data["id"]): data}
+    return {}
+
+
+def _coerce_list_state(data: list[Any]) -> dict[str, dict[str, Any]]:
+    """Coerce list-shaped state data."""
+    result: dict[str, dict[str, Any]] = {}
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        identifier = item.get("id") or item.get("device_id") or item.get("deviceId")
+        if identifier is not None:
+            result[str(identifier)] = item
+    return result
 
 
 def _has_next_page(batch: list[dict[str, Any]], meta: dict[str, Any], page_size: int) -> bool:
@@ -584,7 +607,9 @@ def _has_next_page(batch: list[dict[str, Any]], meta: dict[str, Any], page_size:
 
 
 def _retry_delay(attempt: int) -> float:
-    return float(min(2**attempt, 30)) + random.uniform(0.0, 0.5)
+    """Calculate exponential backoff with secure jitter."""
+    jitter = secrets.SystemRandom().uniform(0.0, 0.5)
+    return float(min(2**attempt, 30)) + jitter
 
 
 async def _async_retry_sleep(response: ClientResponse, attempt: int) -> None:

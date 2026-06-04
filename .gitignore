@@ -21,7 +21,6 @@ env/
 .ruff_cache/
 .coverage
 .coverage.*
-coverage.xml
 htmlcov/
 
 # macOS/editor noise
@@ -32,6 +31,9 @@ htmlcov/
 # Tooling outputs
 mutants/
 default/
+*-report.txt
+*-report.json
+coverage.xml
 
 # External information directories
 gitignore/

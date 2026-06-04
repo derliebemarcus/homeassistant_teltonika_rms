@@ -7,12 +7,12 @@ from typing import Any
 from homeassistant.components.device_tracker import SourceType  # type: ignore[attr-defined]
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import TeltonikaRmsRuntime
 from .coordinator import CoordinatorBundle
-from .entity import TeltonikaRmsEntity
+from .entity import TeltonikaRmsEntity, async_setup_platform_helper
 from .models import has_location_coordinates
 
 PARALLEL_UPDATES = 0
@@ -23,28 +23,35 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Initialize Teltonika RMS device trackers."""
     runtime: TeltonikaRmsRuntime = entry.runtime_data
     bundle: CoordinatorBundle = runtime.bundle
-    known: set[str] = set()
 
-    @callback
-    def _add_new_entities() -> None:
-        new_entities: list[RmsDeviceTracker] = []
-        for device_id in bundle.inventory.data:
-            normalized = bundle.merged_device(device_id)
-            if not has_location_coordinates(normalized):
-                continue
-            unique = f"{device_id}_location"
-            if unique in known:
-                continue
-            known.add(unique)
-            new_entities.append(RmsDeviceTracker(bundle, device_id))
-        if new_entities:
-            async_add_entities(new_entities)
+    # Delegate discovery and setup to common helper
+    async_setup_platform_helper(
+        entry,
+        bundle,
+        async_add_entities,
+        _discover_tracker_entities,
+        [bundle.inventory, bundle.state],
+    )
 
-    _add_new_entities()
-    entry.async_on_unload(bundle.inventory.async_add_listener(_add_new_entities))
-    entry.async_on_unload(bundle.state.async_add_listener(_add_new_entities))
+
+def _discover_tracker_entities(
+    bundle: CoordinatorBundle, known: set[str]
+) -> list[RmsDeviceTracker]:
+    """Discover new tracker entities."""
+    new_entities: list[RmsDeviceTracker] = []
+    for device_id in bundle.inventory.data:
+        normalized = bundle.merged_device(device_id)
+        if not has_location_coordinates(normalized):
+            continue
+        unique = f"{device_id}_location"
+        if unique in known:
+            continue
+        known.add(unique)
+        new_entities.append(RmsDeviceTracker(bundle, device_id))
+    return new_entities
 
 
 class RmsDeviceTracker(TeltonikaRmsEntity, TrackerEntity):

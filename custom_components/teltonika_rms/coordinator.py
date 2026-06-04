@@ -80,8 +80,6 @@ class InventoryCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 tags=self._tags or None,
                 device_status=self._device_status,
             )
-        except ConfigEntryAuthFailed:
-            raise
         except RmsApiError as err:
             raise UpdateFailed(f"Inventory refresh failed: {err}") from err
 
@@ -102,11 +100,15 @@ class StateCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         hass: HomeAssistant,
         api: RmsApiClient,
         inventory: InventoryCoordinator,
-        options: dict[str, Any],
-        entry: Any = None,
+        config: dict[str, Any],
     ) -> None:
+        """Initialize state coordinator."""
         self._api = api
         self._inventory = inventory
+        self._entry = config.get("config_entry") or config.get("entry")
+        options = config.get("options")
+        if options is None or not isinstance(options, dict):
+            options = config
         self._enable_location = bool(options.get(CONF_ENABLE_LOCATION, True))
         self._estimated_devices = int(
             options.get(CONF_ESTIMATED_DEVICES, DEFAULT_ESTIMATED_DEVICES)
@@ -117,7 +119,7 @@ class StateCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             LOGGER,
             name="Teltonika RMS state",
             update_interval=timedelta(seconds=max(60, self._state_interval)),
-            config_entry=entry,
+            config_entry=self._entry,
         )
 
     @property
@@ -151,8 +153,6 @@ class StateCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 device_ids,
                 max_per_cycle=max_per_cycle,
             )
-        except ConfigEntryAuthFailed:
-            raise
         except RmsApiError as err:
             raise UpdateFailed(f"State refresh failed: {err}") from err
 
@@ -254,9 +254,10 @@ class PortScanCoordinator(DataUpdateCoordinator[dict[str, list[dict[str, Any]]]]
             except ConfigEntryAuthFailed:
                 if not self._scope_warning_logged:
                     LOGGER.warning(
-                        "Skipping Teltonika RMS ethernet port scans because the current credentials "
-                        "do not allow the port-scan endpoint. Add device_remote_access:read and "
-                        "reauthenticate to enable Ethernet port entities."
+                        "Skipping Teltonika RMS ethernet port scans because the current "
+                        "credentials do not allow the port-scan endpoint. Add "
+                        "device_remote_access:read and reauthenticate to enable "
+                        "Ethernet port entities."
                     )
                     self._scope_warning_logged = True
                 continue
