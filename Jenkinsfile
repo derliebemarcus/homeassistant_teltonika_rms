@@ -13,6 +13,24 @@ String sourceIncludes() {
     return 'CHANGELOG.md,CONTRIBUTING.md,custom_components/**,hacs.json,Jenkinsfile,LICENSE,Makefile,osv-scanner.toml,pyproject.toml,pytest.ini,README.md,requirements-dev.txt,requirements.txt,ROADMAP.md,tests/**,tools/**,.coveragerc,.flake8,.githooks/**,.github/**,.gitignore,.gitleaksignore,.trivyignore'
 }
 
+void normalizeWorkspacePermissions() {
+    sh '''
+        set +e
+        PARENT_DIR="$(dirname "$WORKSPACE")"
+        WORKSPACE_NAME="$(basename "$WORKSPACE")"
+        WORKSPACE_BASE="${WORKSPACE_NAME%%@*}"
+        USER_ID="$(id -u)"
+        GROUP_ID="$(id -g)"
+
+        for path in "$PARENT_DIR/$WORKSPACE_BASE" "$PARENT_DIR/$WORKSPACE_BASE"@*; do
+            [ -e "$path" ] || continue
+            echo "Normalizing workspace permissions: $path"
+            sudo chown -R "$USER_ID:$GROUP_ID" "$path" || true
+            sudo chmod -R u+rwX "$path" || true
+        done
+    '''
+}
+
 void markReportFailure(String markerName, Closure body) {
     try {
         body()
@@ -66,6 +84,7 @@ pipeline {
             steps {
                 script {
                     env.CURRENT_STAGE = 'Initialize & Stash'
+                    normalizeWorkspacePermissions()
                     deleteDir()
                     checkoutRepo()
                     env.CAPTURED_SHA = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
@@ -96,6 +115,7 @@ PY
             steps {
                 script {
                     env.CURRENT_STAGE = 'Build CI Environment'
+                    normalizeWorkspacePermissions()
                     deleteDir()
                     unstash 'source'
                     sh """
@@ -120,6 +140,16 @@ EOF
                             podman push ${env.CI_IMAGE}
                         """
                     }
+                }
+            }
+        }
+
+        stage('Normalize Jenkins Workspaces') {
+            agent { label 'klymene' }
+            steps {
+                script {
+                    env.CURRENT_STAGE = 'Normalize Jenkins Workspaces'
+                    normalizeWorkspacePermissions()
                 }
             }
         }
@@ -318,6 +348,7 @@ EOF
             agent { label 'klymene' }
             steps { script {
                 env.CURRENT_STAGE = 'Finalize Quality Gate Result'
+                normalizeWorkspacePermissions()
                 deleteDir()
                 ['qa-failure-marker-pytest-coverage','qa-failure-marker-ruff-lint','qa-failure-marker-ruff-format','qa-failure-marker-mypy','qa-failure-marker-translations','qa-failure-marker-pip-audit','qa-failure-marker-gitleaks','qa-failure-marker-trivy','qa-failure-marker-codeql'].each { unstashIfAvailable(it) }
                 sh 'find .ci-failures -type f -print 2>/dev/null || true'
@@ -339,6 +370,7 @@ EOF
                 githubNotify(credentialsId: 'github token', status: githubStatus, context: 'Continuous Integration / Jenkins', description: failedStage ? "Build ${buildResult} in stage: ${failedStage}" : "Build ${buildResult}", account: env.GITHUB_OWNER, repo: env.GITHUB_REPO, sha: env.CAPTURED_SHA ?: 'main')
                 publishChecks(name: 'Jenkins Build', title: 'Teltonika RMS Quality Gates', summary: failedStage ? "Status: ${buildResult}\nStage: ${failedStage}" : "Status: ${buildResult}", conclusion: checksConclusion, status: 'COMPLETED')
                 node('klymene') {
+                    normalizeWorkspacePermissions()
                     sh "podman rmi ${env.CI_IMAGE} || true"
                 }
             }
