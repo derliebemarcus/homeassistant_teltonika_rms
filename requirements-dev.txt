@@ -1,4 +1,4 @@
-# Home Assistant test and development dependencies.
+# Dependencies used only for Home Assistant tests and development tooling.
 homeassistant==2026.6.4
 pytest==9.0.3
 pytest-cov==7.1.0
