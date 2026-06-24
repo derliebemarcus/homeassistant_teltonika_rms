@@ -1,9 +1,8 @@
 name: Prepare HACS release changelog
 
 on:
-  push:
-    branches:
-      - hacs-default-submission
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -13,21 +12,17 @@ jobs:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
-      - name: Check out submission branch
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
           ref: hacs-default-submission
-      - name: Prepend release notes and remove temporary workflow
+      - name: Add stable release notes
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
-          changelog = Path('CHANGELOG.md')
-          text = changelog.read_text(encoding='utf-8')
-          marker = '## 0.9.11 - 2026-06-24'
-          if marker not in text:
-              intro = '# Changelog\n\nAll notable changes to this project are documented in this file.\n\n'
-              section = '''## 0.9.11 - 2026-06-24
+          path = Path('CHANGELOG.md')
+          text = path.read_text(encoding='utf-8')
+          intro = '# Changelog\n\nAll notable changes to this project are documented in this file.\n\n'
+          section = '''## 0.9.11 - 2026-06-24
 
 ### New Features
 
@@ -47,15 +42,14 @@ jobs:
 - None.
 
 '''
-              if not text.startswith(intro):
-                  raise SystemExit('Unexpected CHANGELOG.md header')
-              changelog.write_text(intro + section + text[len(intro):], encoding='utf-8')
+          if '## 0.9.11 - 2026-06-24' not in text:
+              path.write_text(intro + section + text[len(intro):], encoding='utf-8')
           Path('.github/workflows/prepare-hacs-changelog.yml').unlink()
           PY
-      - name: Commit prepared changelog
+      - name: Commit release notes
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
           git add CHANGELOG.md .github/workflows/prepare-hacs-changelog.yml
           git commit -m 'docs: add v0.9.11 release notes'
           git push origin HEAD:hacs-default-submission
