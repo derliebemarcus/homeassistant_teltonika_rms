@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.device_tracker import SourceType  # type: ignore[attr-defined]
-from homeassistant.components.device_tracker.config_entry import TrackerEntity
+from homeassistant.components.device_tracker import SourceType, TrackerEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -88,7 +87,6 @@ class RmsDeviceTracker(TeltonikaRmsEntity, TrackerEntity):
         attrs: dict[str, Any] = {}
         if normalized.location_label:
             attrs["location_detail"] = normalized.location_label
-
         if normalized.latitude is not None and normalized.longitude is not None:
             coords = f"{normalized.latitude:.6f}, {normalized.longitude:.6f}"
             attrs["coordinates"] = coords
