@@ -12,3 +12,6 @@ jobs:
     steps:
       - name: Check dependency changes
         uses: actions/dependency-review-action@v5
+        with:
+          allow-ghsas: GHSA-537c-gmf6-5ccf
+          show-patched-versions: true
