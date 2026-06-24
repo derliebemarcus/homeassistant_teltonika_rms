@@ -7,20 +7,12 @@ from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import pytest_asyncio
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from custom_components.teltonika_rms import TeltonikaRmsRuntime
 from custom_components.teltonika_rms.const import DOMAIN
 from custom_components.teltonika_rms.coordinator import CoordinatorBundle
-
-
-@pytest_asyncio.fixture(autouse=True)
-def auto_enable_patching() -> str:
-    """Set the default asyncio backend for pytest-asyncio."""
-    # This is necessary to avoid issues with Home Assistant's event loop management
-    return "asyncio"
 
 
 @pytest.fixture
