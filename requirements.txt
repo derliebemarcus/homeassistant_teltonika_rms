@@ -165,7 +165,7 @@ hass-nabucasa==2.2.0
     # via homeassistant
 home-assistant-bluetooth==2.0.0
     # via homeassistant
-homeassistant==2026.6.0
+homeassistant==2026.6.4
     # via -r requirements-dev.txt
 httpcore==1.0.9
     # via httpx
