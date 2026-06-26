@@ -33,7 +33,7 @@ annotated-types==0.7.0
     # via pydantic
 annotatedyaml==1.0.2
     # via homeassistant
-anyio==4.14.0
+anyio==4.14.1
     # via httpx
 astral==2.2
     # via homeassistant
