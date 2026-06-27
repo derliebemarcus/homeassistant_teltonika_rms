@@ -12,6 +12,6 @@ pydantic==2.13.4
 syrupy==5.1.0
 pip-tools==7.5.3
 pip-audit==2.10.0
-boto3==1.43.17
+boto3==1.43.36
 textual==8.2.3
 build==1.5.0

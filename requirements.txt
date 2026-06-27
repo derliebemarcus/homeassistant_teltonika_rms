@@ -79,7 +79,7 @@ bluetooth-data-tools==1.29.18
     # via habluetooth
 boolean-py==5.0
     # via license-expression
-boto3==1.43.17
+boto3==1.43.36
     # via
     #   -r requirements-dev.txt
     #   pycognito
