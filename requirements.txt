@@ -326,7 +326,7 @@ pyrfc3339==2.1.0
     # via acme
 pyric==0.1.6.3
     # via bluetooth-auto-recovery
-pytest==9.0.3
+pytest==9.1.1
     # via
     #   -r requirements-dev.txt
     #   mutmut
