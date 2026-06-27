@@ -159,7 +159,7 @@ h11==0.16.0
     # via
     #   httpcore
     #   wsproto
-habluetooth==6.23.1
+habluetooth==6.26.0
     # via home-assistant-bluetooth
 hass-nabucasa==2.2.0
     # via homeassistant
