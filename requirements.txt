@@ -368,7 +368,7 @@ rich==15.0.0
     #   textual
 ruff==0.15.14
     # via -r requirements-dev.txt
-s3transfer==0.18.0
+s3transfer==0.19.0
     # via boto3
 securetar==2026.4.1
     # via homeassistant
