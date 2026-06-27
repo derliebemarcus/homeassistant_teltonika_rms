@@ -1,0 +1,21 @@
+name: Runtime Dependency Consistency
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-runtime-pins:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Verify manifest and development pins
+        run: python3 tools/check_runtime_requirements.py

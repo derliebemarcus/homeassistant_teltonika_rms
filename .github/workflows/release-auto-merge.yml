@@ -1,0 +1,54 @@
+name: Auto-merge Patch Releases
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  enable-auto-merge:
+    if: "${{ contains(github.event.pull_request.labels.*.name, 'autorelease: pending') }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Check release level
+        id: release
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST="custom_components/teltonika_rms/manifest.json"
+          OLD_VERSION="$(git show "$BASE_SHA:$MANIFEST" | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')"
+          NEW_VERSION="$(python3 -c 'import json; print(json.load(open("custom_components/teltonika_rms/manifest.json"))["version"])')"
+          IFS=. read -r OLD_MAJOR OLD_MINOR OLD_PATCH <<< "$OLD_VERSION"
+          IFS=. read -r NEW_MAJOR NEW_MINOR NEW_PATCH <<< "$NEW_VERSION"
+
+          if [ "$OLD_MAJOR" = "$NEW_MAJOR" ] && [ "$OLD_MINOR" = "$NEW_MINOR" ] && [ "$NEW_PATCH" -gt "$OLD_PATCH" ]; then
+            echo "patch=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "patch=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Enable native auto-merge
+        if: steps.release.outputs.patch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        shell: bash
+        run: |
+          if ! gh pr merge --auto --squash "$PR_URL"; then
+            echo "::warning::Native auto-merge is unavailable. Enable repository auto-merge and required status checks, then merge this patch release manually."
+          fi

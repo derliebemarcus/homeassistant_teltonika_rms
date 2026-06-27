@@ -3,10 +3,8 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-    labels:
-      - "dependencies"
-      - "github-actions"
+      interval: "monthly"
+    open-pull-requests-limit: 0
 
   # Python dependencies are managed by Renovate. Dependabot must not
   # update the generated requirements.txt independently of requirements-dev.txt.
