@@ -384,7 +384,7 @@ snitun==0.45.1
     # via hass-nabucasa
 sortedcontainers==2.4.0
     # via cyclonedx-python-lib
-sqlalchemy==2.0.49
+sqlalchemy==2.0.51
     # via homeassistant
 standard-aifc==3.13.0
     # via homeassistant
