@@ -380,7 +380,7 @@ simple-websocket==1.1.0
     # via python-engineio
 six==1.17.0
     # via python-dateutil
-snitun==0.45.1
+snitun==0.46.1
     # via hass-nabucasa
 sortedcontainers==2.4.0
     # via cyclonedx-python-lib
