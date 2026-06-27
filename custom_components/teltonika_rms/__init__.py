@@ -18,6 +18,7 @@ from homeassistant.helpers.typing import ConfigType
 from . import api as api_mod
 from . import coordinator as coordinator_mod
 from . import endpoint_matrix, status_channel
+from .api_devices import SpecCompatibleRmsApiClient
 from .const import (
     AUTH_MODE_OAUTH2,
     AUTH_MODE_PAT,
@@ -84,7 +85,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     spec_path = str(entry.options.get(CONF_SPEC_PATH, DEFAULT_SPEC_PATH))
     matrix = await hass.async_add_executor_job(endpoint_matrix.load_endpoint_matrix, spec_path)
 
-    api = api_mod.RmsApiClient(
+    api = SpecCompatibleRmsApiClient(
         auth=auth_client,
         endpoint_matrix=matrix,
     )

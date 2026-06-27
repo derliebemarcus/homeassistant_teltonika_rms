@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class RmsApiBaseModel(BaseModel):
@@ -13,15 +13,30 @@ class RmsApiBaseModel(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
-class DeviceListItem(RmsApiBaseModel):
+class IdentifiedDevice(RmsApiBaseModel):
+    """Base for device payloads that need a stable integration identifier."""
+
+    id: str | int | None = None
+    serial: str | None = None
+    imei: str | None = None
+    mac: str | None = None
+
+    @model_validator(mode="after")
+    def validate_identifier(self) -> Self:
+        """Require at least one identifier that Home Assistant can persist."""
+        if all(
+            value in (None, "") for value in (self.id, self.serial, self.imei, self.mac)
+        ):
+            raise ValueError("device payload has no stable identifier")
+        return self
+
+
+class DeviceListItem(IdentifiedDevice):
     """Represents an item in the device list."""
 
-    id: str | int
     name: str | None = None
-    serial: str | None = None
-    mac: str | None = None
     model_name: str | None = Field(None, alias="model")
-    status: str | None = None
+    status: int | str | None = None
 
 
 class DeviceListResponse(RmsApiBaseModel):
@@ -30,15 +45,12 @@ class DeviceListResponse(RmsApiBaseModel):
     data: list[DeviceListItem]
 
 
-class DeviceDetail(RmsApiBaseModel):
+class DeviceDetail(IdentifiedDevice):
     """Represents detailed device information."""
 
-    id: str | int
-    serial: str | None = None
-    mac: str | None = None
     name: str | None = None
     model_name: str | None = Field(None, alias="model")
-    status: str | None = None
+    status: int | str | None = None
 
 
 class DeviceDetailResponse(RmsApiBaseModel):
