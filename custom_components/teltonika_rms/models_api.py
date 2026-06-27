@@ -16,12 +16,12 @@ class RmsApiBaseModel(BaseModel):
 class DeviceListItem(RmsApiBaseModel):
     """Represents an item in the device list."""
 
-    id: str | int
+    id: str | int | None = None
     name: str | None = None
     serial: str | None = None
     mac: str | None = None
     model_name: str | None = Field(None, alias="model")
-    status: str | None = None
+    status: int | str | None = None
 
 
 class DeviceListResponse(RmsApiBaseModel):
@@ -33,12 +33,12 @@ class DeviceListResponse(RmsApiBaseModel):
 class DeviceDetail(RmsApiBaseModel):
     """Represents detailed device information."""
 
-    id: str | int
+    id: str | int | None = None
     serial: str | None = None
     mac: str | None = None
     name: str | None = None
     model_name: str | None = Field(None, alias="model")
-    status: str | None = None
+    status: int | str | None = None
 
 
 class DeviceDetailResponse(RmsApiBaseModel):
