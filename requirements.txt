@@ -35,7 +35,7 @@ annotatedyaml==1.0.2
     # via homeassistant
 anyio==4.14.1
     # via httpx
-astral==2.2
+astral==3.2
     # via homeassistant
 async-interrupt==1.2.2
     # via
