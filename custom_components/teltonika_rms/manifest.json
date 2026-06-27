@@ -10,6 +10,6 @@
   "issue_tracker": "https://github.com/derliebemarcus/homeassistant_teltonika_rms/issues",
   "loggers": ["custom_components.teltonika_rms"],
   "quality_scale": "platinum",
-  "requirements": ["python-socketio==5.16.1"],
+  "requirements": ["python-socketio==5.16.2"],
   "version": "0.9.11"
 }

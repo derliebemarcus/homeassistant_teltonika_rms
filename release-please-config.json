@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "homeassistant_teltonika_rms",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "custom_components/teltonika_rms/manifest.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  }
+}

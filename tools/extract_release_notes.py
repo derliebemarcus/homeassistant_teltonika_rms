@@ -7,10 +7,11 @@ import json
 import sys
 from pathlib import Path
 
-from check_release_notes import REQUIRED_HEADINGS, extract_section
+from check_release_notes import extract_section
 
 
 def main() -> int:
+    """Extract the current release section to stdout or a file."""
     manifest_path = (
         Path(sys.argv[1])
         if len(sys.argv) > 1
@@ -22,15 +23,7 @@ def main() -> int:
     version = str(json.loads(manifest_path.read_text(encoding="utf-8"))["version"]).strip()
     section = extract_section(changelog_path.read_text(encoding="utf-8"), version)
     if not section:
-        print(f"Missing changelog section for version {version}", file=sys.stderr)
-        return 1
-
-    missing = [heading for heading in REQUIRED_HEADINGS if heading not in section]
-    if missing:
-        print(
-            f"Version {version} is missing release-note headings: {', '.join(missing)}",
-            file=sys.stderr,
-        )
+        print(f"Missing or empty changelog section for version {version}", file=sys.stderr)
         return 1
 
     if output_path is None:

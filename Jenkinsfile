@@ -58,8 +58,6 @@ pipeline {
     agent none
 
     options {
-        ansiColor('xterm')
-        timestamps()
         disableConcurrentBuilds()
         skipDefaultCheckout()
     }
