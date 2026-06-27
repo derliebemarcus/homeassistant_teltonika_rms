@@ -438,7 +438,7 @@ usb-devices==0.5.1
     #   bluetooth-auto-recovery
 uv==0.11.16
     # via homeassistant
-voluptuous==0.15.2
+voluptuous==0.16.0
     # via
     #   annotatedyaml
     #   hass-nabucasa
