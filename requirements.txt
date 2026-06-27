@@ -436,7 +436,7 @@ usb-devices==0.5.1
     # via
     #   bluetooth-adapters
     #   bluetooth-auto-recovery
-uv==0.11.16
+uv==0.11.25
     # via homeassistant
 voluptuous==0.15.2
     # via
