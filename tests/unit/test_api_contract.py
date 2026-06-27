@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import cast
 
+import pytest
+from pydantic import ValidationError
+
 from custom_components.teltonika_rms.models_api import (
     DeviceDetailResponse,
     DeviceListResponse,
@@ -33,11 +36,20 @@ def test_device_list_response_valid() -> None:
 
 
 def test_device_list_response_accepts_optional_id_and_nullable_status() -> None:
-    """RMS does not mark device properties as required and permits a null status."""
+    """Accept an ID-less RMS record when another stable identifier is present."""
     response = DeviceListResponse.model_validate(
-        {"data": [{"name": "Pending inventory record", "status": None}]}
+        {
+            "data": [
+                {
+                    "name": "Pending inventory record",
+                    "serial": "SER-1",
+                    "status": None,
+                }
+            ]
+        }
     )
     assert response.data[0].id is None
+    assert response.data[0].serial == "SER-1"
     assert response.data[0].status is None
 
 
@@ -47,6 +59,12 @@ def test_device_list_response_accepts_legacy_string_status() -> None:
         {"data": [{"id": "1", "status": "online"}]}
     )
     assert response.data[0].status == "online"
+
+
+def test_device_list_response_rejects_unidentified_record() -> None:
+    """Reject rows that cannot produce a persistent Home Assistant device ID."""
+    with pytest.raises(ValidationError, match="stable identifier"):
+        DeviceListResponse.model_validate({"data": [{"name": "Missing identifier"}]})
 
 
 def test_device_detail_response_valid() -> None:
