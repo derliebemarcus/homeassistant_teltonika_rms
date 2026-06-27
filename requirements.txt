@@ -366,7 +366,7 @@ rich==15.0.0
     # via
     #   pip-audit
     #   textual
-ruff==0.15.14
+ruff==0.15.20
     # via -r requirements-dev.txt
 s3transfer==0.18.0
     # via boto3
