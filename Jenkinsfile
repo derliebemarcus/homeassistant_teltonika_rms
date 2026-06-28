@@ -216,14 +216,14 @@ PY
                             ''',
                             returnStdout: true
                         ).trim()
-                        runLoggedShell('''
+                        runLoggedShell("""
                             if grep -R "<<<<<<<\\|=======\\|>>>>>>>" requirements*.txt requirements*.in pyproject.toml custom_components tests tools 2>/dev/null; then
                                 echo "Merge conflict markers detected."
                                 exit 1
                             fi
-                            echo "Commit: ${CAPTURED_SHA}"
-                            echo "Version: ${VERSION}"
-                        ''', logFile)
+                            echo "Commit: ${env.CAPTURED_SHA}"
+                            echo "Version: ${env.VERSION}"
+                        """, logFile)
                         stash name: 'source', includes: sourceIncludes(), useDefaultExcludes: false
                     }
                 }
