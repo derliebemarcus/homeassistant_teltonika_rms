@@ -3,14 +3,14 @@ void checkoutRepo() {
         branches: [[name: env.BRANCH_NAME ? "*/${env.BRANCH_NAME}" : '*/main']],
         extensions: [cloneOption(noTags: false, shallow: false, depth: 0)],
         userRemoteConfigs: [[
-            url: 'https://github.com/derliebemarcus/teltonika_rms.git',
+            url: 'https://github.com/derliebemarcus/homeassistant_teltonika_rms.git',
             credentialsId: 'github token'
         ]]
     )
 }
 
 String sourceIncludes() {
-    return 'CHANGELOG.md,CONTRIBUTING.md,custom_components/**,hacs.json,Jenkinsfile,LICENSE,Makefile,osv-scanner.toml,pyproject.toml,pytest.ini,README.md,requirements-dev.txt,requirements.txt,ROADMAP.md,tests/**,tools/**,.coveragerc,.flake8,.githooks/**,.github/**,.gitignore,.gitleaksignore,.trivyignore'
+    return 'CHANGELOG.md,CONTRIBUTING.md,custom_components/**,hacs.json,Jenkinsfile,LICENSE,Makefile,osv-scanner.toml,pyproject.toml,pytest.ini,README.md,requirements-dev.in,requirements.txt,ROADMAP.md,tests/**,tools/**,.coveragerc,.flake8,.githooks/**,.github/**,.gitignore,.gitleaksignore,.trivyignore'
 }
 
 void normalizeWorkspacePermissions() {
@@ -29,6 +29,22 @@ void normalizeWorkspacePermissions() {
             sudo chmod -R u+rwX "$path" || true
         done
     '''
+}
+
+void runInCi(String command, String environmentOptions = '') {
+    writeFile(
+        file: '.ci-command.sh',
+        text: "#!/bin/sh\nset -eu\n${command}\n"
+    )
+    sh """
+        chmod 700 .ci-command.sh
+        podman run --rm --pull=never \
+          ${environmentOptions} \
+          -v "\$PWD:/build:z" \
+          -w /build \
+          ${env.CI_IMAGE} \
+          /bin/sh /build/.ci-command.sh
+    """
 }
 
 void markReportFailure(String markerName, Closure body) {
@@ -68,7 +84,7 @@ pipeline {
         CI_REGISTRY = 'https://registry.home.siczb.de'
         PYPI_URL = 'https://artifacts.home.siczb.de/repository/pypi-proxy/simple/'
         GITHUB_OWNER = 'derliebemarcus'
-        GITHUB_REPO = 'teltonika_rms'
+        GITHUB_REPO = 'homeassistant_teltonika_rms'
         SB_NAME = "build_sb_${env.BUILD_NUMBER}"
         CURRENT_STAGE = 'Initialize'
         CAPTURED_SHA = ''
@@ -98,7 +114,7 @@ PY
                         returnStdout: true
                     ).trim()
                     sh '''
-                        if grep -R "<<<<<<<\\|=======\\|>>>>>>>" requirements*.txt pyproject.toml custom_components tests tools 2>/dev/null; then
+                        if grep -R "<<<<<<<\\|=======\\|>>>>>>>" requirements*.txt requirements*.in pyproject.toml custom_components tests tools 2>/dev/null; then
                             echo "Merge conflict markers detected."
                             exit 1
                         fi
@@ -122,9 +138,9 @@ FROM ${env.CI_BASE_IMAGE}
 WORKDIR /build
 USER root
 RUN (apt-get update && apt-get install -y git curl ca-certificates) || (apk add --no-cache git curl ca-certificates) || true
-COPY requirements-dev.txt ./
+COPY requirements.txt ./
 RUN python3 -m pip install --upgrade pip --index-url ${env.PYPI_URL}
-RUN python3 -m pip install --index-url ${env.PYPI_URL} -r requirements-dev.txt
+RUN python3 -m pip install --index-url ${env.PYPI_URL} -r requirements.txt
 COPY pyproject.toml pytest.ini .coveragerc ./
 COPY custom_components ./custom_components
 COPY tests ./tests
@@ -156,14 +172,14 @@ EOF
             failFast false
             parallel {
                 stage('Pytest Coverage Report') {
-                    agent { docker { image "${env.CI_IMAGE}"; registryUrl "${env.CI_REGISTRY}"; registryCredentialsId 'harbor-jenkins-user'; label 'klymene' } }
+                    agent { label 'klymene' }
                     steps {
                         script {
                             env.CURRENT_STAGE = 'Pytest Coverage Report'
                             runReportStage('pytest-coverage') {
                                 deleteDir()
                                 unstash 'source'
-                                sh """
+                                runInCi("""
                                     mkdir -p ${env.SB_NAME}/sonar/tests
                                     python3 -m pytest tests/unit tests/ha \
                                       --junitxml=${env.SB_NAME}/sonar/tests/pytest.xml \
@@ -171,7 +187,7 @@ EOF
                                       --cov-report=xml:${env.SB_NAME}/sonar/tests/coverage.xml \
                                       --cov-report=term-missing
                                     python3 tools/check_coverage_threshold.py ${env.SB_NAME}/sonar/tests/coverage.xml 97.1
-                                """
+                                """)
                             }
                         }
                     }
@@ -179,57 +195,53 @@ EOF
                 }
 
                 stage('Ruff Lint Report') {
-                    agent { docker { image "${env.CI_IMAGE}"; registryUrl "${env.CI_REGISTRY}"; registryCredentialsId 'harbor-jenkins-user'; label 'klymene' } }
-                    steps { script { env.CURRENT_STAGE = 'Ruff Lint Report'; runReportStage('ruff-lint') { deleteDir(); unstash 'source'; sh "mkdir -p ${env.SB_NAME}/sonar/ruff && python3 -m ruff check . --output-format=json --output-file=${env.SB_NAME}/sonar/ruff/ruff-report.json" } } }
+                    agent { label 'klymene' }
+                    steps { script { env.CURRENT_STAGE = 'Ruff Lint Report'; runReportStage('ruff-lint') { deleteDir(); unstash 'source'; runInCi("mkdir -p ${env.SB_NAME}/sonar/ruff && python3 -m ruff check . --output-format=json --output-file=${env.SB_NAME}/sonar/ruff/ruff-report.json") } } }
                     post { always { stash name: 'report-ruff-lint', includes: "${env.SB_NAME}/sonar/ruff/**", allowEmpty: true; stash name: 'qa-failure-marker-ruff-lint', includes: '.ci-failures/ruff-lint.failed', allowEmpty: true; archiveArtifacts artifacts: "${env.SB_NAME}/sonar/ruff/**", allowEmptyArchive: true } }
                 }
 
                 stage('Ruff Format Report') {
-                    agent { docker { image "${env.CI_IMAGE}"; registryUrl "${env.CI_REGISTRY}"; registryCredentialsId 'harbor-jenkins-user'; label 'klymene' } }
-                    steps { script { env.CURRENT_STAGE = 'Ruff Format Report'; runReportStage('ruff-format') { deleteDir(); unstash 'source'; sh """
+                    agent { label 'klymene' }
+                    steps { script { env.CURRENT_STAGE = 'Ruff Format Report'; runReportStage('ruff-format') { deleteDir(); unstash 'source'; runInCi("""
                         mkdir -p ${env.SB_NAME}/sonar/ruff-format
-                        python3 -m ruff format --check . > ${env.SB_NAME}/sonar/ruff-format/ruff-format.txt 2>&1
-                        status=\$?
+                        status=0
+                        python3 -m ruff format --check . > ${env.SB_NAME}/sonar/ruff-format/ruff-format.txt 2>&1 || status=\$?
                         cat ${env.SB_NAME}/sonar/ruff-format/ruff-format.txt
                         exit \$status
-                    """ } } }
+                    """) } } }
                     post { always { stash name: 'report-ruff-format', includes: "${env.SB_NAME}/sonar/ruff-format/**", allowEmpty: true; stash name: 'qa-failure-marker-ruff-format', includes: '.ci-failures/ruff-format.failed', allowEmpty: true; archiveArtifacts artifacts: "${env.SB_NAME}/sonar/ruff-format/**", allowEmptyArchive: true } }
                 }
 
                 stage('Mypy Report') {
-                    agent { docker { image "${env.CI_IMAGE}"; registryUrl "${env.CI_REGISTRY}"; registryCredentialsId 'harbor-jenkins-user'; label 'klymene' } }
-                    steps { script { env.CURRENT_STAGE = 'Mypy Report'; runReportStage('mypy') { deleteDir(); unstash 'source'; sh """
+                    agent { label 'klymene' }
+                    steps { script { env.CURRENT_STAGE = 'Mypy Report'; runReportStage('mypy') { deleteDir(); unstash 'source'; runInCi("""
                         mkdir -p ${env.SB_NAME}/sonar/mypy
-                        python3 -m mypy . --show-column-numbers > ${env.SB_NAME}/sonar/mypy/mypy-report.txt 2>&1
-                        status=\$?
+                        status=0
+                        python3 -m mypy . --show-column-numbers > ${env.SB_NAME}/sonar/mypy/mypy-report.txt 2>&1 || status=\$?
                         cat ${env.SB_NAME}/sonar/mypy/mypy-report.txt
                         exit \$status
-                    """ } } }
+                    """) } } }
                     post { always { stash name: 'report-mypy', includes: "${env.SB_NAME}/sonar/mypy/**", allowEmpty: true; stash name: 'qa-failure-marker-mypy', includes: '.ci-failures/mypy.failed', allowEmpty: true; archiveArtifacts artifacts: "${env.SB_NAME}/sonar/mypy/**", allowEmptyArchive: true } }
                 }
 
                 stage('Translation Validation Report') {
-                    agent { docker { image "${env.CI_IMAGE}"; registryUrl "${env.CI_REGISTRY}"; registryCredentialsId 'harbor-jenkins-user'; label 'klymene' } }
-                    steps { script { env.CURRENT_STAGE = 'Translation Validation Report'; runReportStage('translations') { deleteDir(); unstash 'source'; sh """
+                    agent { label 'klymene' }
+                    steps { script { env.CURRENT_STAGE = 'Translation Validation Report'; runReportStage('translations') { deleteDir(); unstash 'source'; runInCi("""
                         mkdir -p ${env.SB_NAME}/sonar/translations
-                        python3 tools/check_translations.py > ${env.SB_NAME}/sonar/translations/translations.txt 2>&1
-                        status=\$?
+                        status=0
+                        python3 tools/check_translations.py > ${env.SB_NAME}/sonar/translations/translations.txt 2>&1 || status=\$?
                         cat ${env.SB_NAME}/sonar/translations/translations.txt
                         exit \$status
-                    """ } } }
+                    """) } } }
                     post { always { stash name: 'report-translations', includes: "${env.SB_NAME}/sonar/translations/**", allowEmpty: true; stash name: 'qa-failure-marker-translations', includes: '.ci-failures/translations.failed', allowEmpty: true; archiveArtifacts artifacts: "${env.SB_NAME}/sonar/translations/**", allowEmptyArchive: true } }
                 }
 
                 stage('Pip Audit Report') {
-                    agent { docker { image "${env.CI_IMAGE}"; registryUrl "${env.CI_REGISTRY}"; registryCredentialsId 'harbor-jenkins-user'; label 'klymene' } }
-                    steps { script { env.CURRENT_STAGE = 'Pip Audit Report'; runReportStage('pip-audit') { deleteDir(); unstash 'source'; sh """
+                    agent { label 'klymene' }
+                    steps { script { env.CURRENT_STAGE = 'Pip Audit Report'; runReportStage('pip-audit') { deleteDir(); unstash 'source'; runInCi("""
                         mkdir -p ${env.SB_NAME}/sonar/pip-audit
-                        python3 -m pip_audit -r requirements-dev.txt --format json --output ${env.SB_NAME}/sonar/pip-audit/pip-audit-report.json \
-                          --ignore-vuln CVE-2025-67221 --ignore-vuln CVE-2026-32597 --ignore-vuln CVE-2026-27448 --ignore-vuln CVE-2026-27459 \
-                          --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-25645 --ignore-vuln CVE-2026-34073 --ignore-vuln CVE-2026-39892 \
-                          --ignore-vuln GHSA-pjjw-68hj-v9mw --ignore-vuln CVE-2026-34513 --ignore-vuln CVE-2026-34525 --ignore-vuln CVE-2026-34519 \
-                          --ignore-vuln CVE-2026-34520 --ignore-vuln CVE-2026-34517
-                    """ } } }
+                        python3 tools/run_pip_audit.py -r requirements.txt --format json --output ${env.SB_NAME}/sonar/pip-audit/pip-audit-report.json
+                    """) } } }
                     post { always { stash name: 'report-pip-audit', includes: "${env.SB_NAME}/sonar/pip-audit/**", allowEmpty: true; stash name: 'qa-failure-marker-pip-audit', includes: '.ci-failures/pip-audit.failed', allowEmpty: true; archiveArtifacts artifacts: "${env.SB_NAME}/sonar/pip-audit/**", allowEmptyArchive: true } }
                 }
 
@@ -271,7 +283,7 @@ EOF
             failFast false
             parallel {
                 stage('SonarQube Scan') {
-                    agent { docker { image "${env.CI_IMAGE}"; registryUrl "${env.CI_REGISTRY}"; registryCredentialsId 'harbor-jenkins-user'; label 'klymene' } }
+                    agent { label 'klymene' }
                     steps { script {
                         env.CURRENT_STAGE = 'SonarQube Scan'
                         deleteDir()
@@ -280,8 +292,7 @@ EOF
                         sh "mkdir -p ${env.SB_NAME}/sonar && find ${env.SB_NAME}/sonar -type f | sort || true"
                         withSonarQubeEnv('SonarQube') {
                             withCredentials([string(credentialsId: 'Sonarqube', variable: 'SONAR_TOKEN')]) {
-                                sh """
-                                    set -eu
+                                runInCi("""
                                     SONAR_BIN="\$(command -v sonar-scanner || true)"
                                     if [ -z "\$SONAR_BIN" ] && command -v pysonar >/dev/null 2>&1; then SONAR_BIN="\$(command -v pysonar)"; fi
                                     if [ -z "\$SONAR_BIN" ]; then echo "Neither sonar-scanner nor pysonar is available in the CI image."; exit 1; fi
@@ -289,28 +300,27 @@ EOF
                                     if [ -f "${env.SB_NAME}/sonar/tests/coverage.xml" ]; then SONAR_ARGS="\$SONAR_ARGS -Dsonar.python.coverage.reportPaths=${env.SB_NAME}/sonar/tests/coverage.xml"; fi
                                     if [ -f "${env.SB_NAME}/sonar/tests/pytest.xml" ]; then SONAR_ARGS="\$SONAR_ARGS -Dsonar.python.xunit.reportPath=${env.SB_NAME}/sonar/tests/pytest.xml"; fi
                                     "\$SONAR_BIN" \$SONAR_ARGS
-                                """
+                                """, '--env SONAR_TOKEN')
                             }
                         }
                     } }
                 }
 
                 stage('Mutation Testing') {
-                    agent { docker { image "${env.CI_IMAGE}"; registryUrl "${env.CI_REGISTRY}"; registryCredentialsId 'harbor-jenkins-user'; label 'klymene' } }
+                    agent { label 'klymene' }
                     options { timeout(time: 45, unit: 'MINUTES') }
-                    steps { script { env.CURRENT_STAGE = 'Mutation Testing'; deleteDir(); unstash 'source'; sh """
+                    steps { script { env.CURRENT_STAGE = 'Mutation Testing'; deleteDir(); unstash 'source'; runInCi("""
                         mkdir -p ${env.SB_NAME}/mutation
                         python3 -m pytest --cov=custom_components/teltonika_rms --cov-context=test --cov-config=.coveragerc tests/
                         python3 -m mutmut run
                         python3 -m mutmut results > ${env.SB_NAME}/mutation/mutation-results.txt || true
-                    """ } }
+                    """) } }
                     post { always { archiveArtifacts artifacts: "${env.SB_NAME}/mutation/**,mutants/.mutmut-cache/**", allowEmptyArchive: true } }
                 }
 
                 stage('Repository Rules') {
-                    agent { docker { image "${env.CI_IMAGE}"; registryUrl "${env.CI_REGISTRY}"; registryCredentialsId 'harbor-jenkins-user'; label 'klymene' } }
-                    steps { script { env.CURRENT_STAGE = 'Repository Rules'; deleteDir(); checkoutRepo(); sh '''
-                        set -eu
+                    agent { label 'klymene' }
+                    steps { script { env.CURRENT_STAGE = 'Repository Rules'; deleteDir(); checkoutRepo(); runInCi('''
                         if [ -n "${CHANGE_TARGET:-}" ]; then
                             git fetch origin "${CHANGE_TARGET}:refs/remotes/origin/${CHANGE_TARGET}" || true
                             RANGE="$(git merge-base HEAD "origin/${CHANGE_TARGET}" || git rev-parse HEAD^)..HEAD"
@@ -322,12 +332,12 @@ EOF
                         echo "Commit range: ${RANGE}"
                         python3 tools/check_commit_messages.py "${RANGE}"
                         python3 tools/check_release_notes.py custom_components/teltonika_rms/manifest.json CHANGELOG.md
-                    ''' } }
+                    ''', '--env CHANGE_TARGET --env GIT_PREVIOUS_SUCCESSFUL_COMMIT') } }
                 }
 
                 stage('Hassfest') {
                     agent { label 'klymene' }
-                    steps { script { env.CURRENT_STAGE = 'Hassfest'; deleteDir(); unstash 'source'; sh 'podman run --rm -v "$PWD:/github/workspace:z" ghcr.io/home-assistant/actions/hassfest:latest' } }
+                    steps { script { env.CURRENT_STAGE = 'Hassfest'; deleteDir(); unstash 'source'; sh 'podman run --rm -v "$PWD:/github/workspace:z" ghcr.io/home-assistant/hassfest:latest' } }
                 }
 
                 stage('OSV Scanner') {
@@ -337,7 +347,7 @@ EOF
 
                 stage('Actionlint') {
                     agent { label 'klymene' }
-                    steps { script { env.CURRENT_STAGE = 'Actionlint'; deleteDir(); unstash 'source'; sh 'podman run --rm -v "$PWD:/repo:z" -w /repo docker.io/rhysd/actionlint:latest' } }
+                    steps { script { env.CURRENT_STAGE = 'Actionlint'; deleteDir(); checkoutRepo(); sh 'podman run --rm -v "$PWD:/repo:z" -w /repo docker.io/rhysd/actionlint:latest' } }
                 }
             }
         }

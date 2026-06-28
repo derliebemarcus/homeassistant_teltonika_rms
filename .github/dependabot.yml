@@ -7,7 +7,7 @@ updates:
     open-pull-requests-limit: 0
 
   # Python dependencies are managed by Renovate. Dependabot must not
-  # update the generated requirements.txt independently of requirements-dev.txt.
+  # update the generated requirements.txt independently of requirements-dev.in.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:

@@ -34,6 +34,7 @@ default/
 *-report.txt
 *-report.json
 coverage.xml
+.scannerwork/
 
 # External information directories
 gitignore/

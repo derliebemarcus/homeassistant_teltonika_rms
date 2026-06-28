@@ -1,15 +1,23 @@
 {
   "domain": "teltonika_rms",
   "name": "Teltonika RMS",
-  "codeowners": ["@derliebemarcus"],
+  "codeowners": [
+    "@derliebemarcus"
+  ],
   "config_flow": true,
-  "dependencies": ["application_credentials"],
+  "dependencies": [
+    "application_credentials"
+  ],
   "documentation": "https://github.com/derliebemarcus/homeassistant_teltonika_rms",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/derliebemarcus/homeassistant_teltonika_rms/issues",
-  "loggers": ["custom_components.teltonika_rms"],
+  "loggers": [
+    "custom_components.teltonika_rms"
+  ],
   "quality_scale": "platinum",
-  "requirements": ["python-socketio==5.16.2"],
-  "version": "0.9.11"
+  "requirements": [
+    "python-socketio==5.16.3"
+  ],
+  "version": "0.9.12"
 }

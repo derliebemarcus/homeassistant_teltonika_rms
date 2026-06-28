@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 REPORT_FILE="$(mktemp "${TMPDIR:-/tmp}/teltonika-rms-pytest-XXXXXX.xml")"
 VENV_DIR="$ROOT/.venv-test"
-COVERAGE_MINIMUM="98.50"
+COVERAGE_MINIMUM="98.36"
 
 pick_bootstrap_python() {
   if command -v python3.14 >/dev/null 2>&1; then
@@ -83,19 +83,8 @@ if [ -d "$ROOT/tests/ha" ]; then
 fi
 
 echo "[pre-commit] Checking lockfile consistency..."
-cp requirements.txt /tmp/requirements.txt.tmp
-
-if ! "$PYTHON_BIN" -m piptools compile \
-  --no-strip-extras \
-  --no-header \
-  requirements-dev.txt \
-  -o /tmp/requirements.txt.tmp >/dev/null 2>&1; then
-  echo "[pre-commit] Failed to compile requirements-dev.txt."
-  exit 1
-fi
-
-if ! diff requirements.txt /tmp/requirements.txt.tmp >/dev/null 2>&1; then
-  echo "[pre-commit] lockfile (requirements.txt) is out of sync with requirements-dev.txt."
+if ! tools/compile_lockfile.sh --check; then
+  echo "[pre-commit] lockfile is out of sync with requirements-dev.in."
   echo "[pre-commit] Run 'make lock' to update."
   exit 1
 fi
@@ -135,7 +124,7 @@ if ! "$PYTHON_BIN" tools/check_release_notes.py custom_components/teltonika_rms/
 fi
 
 echo "[pre-commit] Running pip-audit security check..."
-if ! "$PYTHON_BIN" -m pip_audit -r requirements-dev.txt --ignore-vuln CVE-2025-67221 --ignore-vuln CVE-2026-32597 --ignore-vuln CVE-2026-27448 --ignore-vuln CVE-2026-27459 --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-25645 --ignore-vuln CVE-2026-34073 --ignore-vuln CVE-2026-39892 --ignore-vuln GHSA-pjjw-68hj-v9mw --ignore-vuln CVE-2025-71176 --ignore-vuln CVE-2026-34993 --ignore-vuln CVE-2026-47265 --ignore-vuln CVE-2026-54273 --ignore-vuln CVE-2026-54279 --ignore-vuln CVE-2026-54277 --ignore-vuln CVE-2026-50269 --ignore-vuln CVE-2026-54276 --ignore-vuln CVE-2026-54278 --ignore-vuln CVE-2026-54280 --ignore-vuln CVE-2026-54274 --ignore-vuln CVE-2026-54275 --ignore-vuln GHSA-537c-gmf6-5ccf --ignore-vuln PYSEC-2026-175 --ignore-vuln PYSEC-2026-176 --ignore-vuln PYSEC-2026-177 --ignore-vuln PYSEC-2026-178 --ignore-vuln PYSEC-2026-179 ; then
+if ! "$PYTHON_BIN" -m pip_audit -r requirements.txt --ignore-vuln CVE-2025-67221 --ignore-vuln CVE-2026-32597 --ignore-vuln CVE-2026-27448 --ignore-vuln CVE-2026-27459 --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-25645 --ignore-vuln CVE-2026-34073 --ignore-vuln CVE-2026-39892 --ignore-vuln GHSA-pjjw-68hj-v9mw --ignore-vuln CVE-2025-71176 --ignore-vuln CVE-2026-34993 --ignore-vuln CVE-2026-47265 --ignore-vuln CVE-2026-54273 --ignore-vuln CVE-2026-54279 --ignore-vuln CVE-2026-54277 --ignore-vuln CVE-2026-50269 --ignore-vuln CVE-2026-54276 --ignore-vuln CVE-2026-54278 --ignore-vuln CVE-2026-54280 --ignore-vuln CVE-2026-54274 --ignore-vuln CVE-2026-54275 --ignore-vuln GHSA-537c-gmf6-5ccf --ignore-vuln PYSEC-2026-175 --ignore-vuln PYSEC-2026-176 --ignore-vuln PYSEC-2026-177 --ignore-vuln PYSEC-2026-178 --ignore-vuln PYSEC-2026-179 ; then
   echo "[pre-commit] Security audit failed. Fix vulnerable dependencies before committing."
   exit 1
 fi

@@ -18,11 +18,11 @@ jobs:
     runs-on: [self-hosted, linux, X64]
     permissions:
       contents: read
-      actions: read
     env:
       PYENV_ROOT: /opt/github/pyenv
       PATH: /opt/github/pyenv/shims:/opt/github/pyenv/bin:/usr/local/bin:/usr/bin:/bin
       PYENV_VERSION: "3.14"
+      PIP_INDEX_URL: https://artifacts.home.siczb.de/repository/pypi-proxy/simple/
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -30,46 +30,12 @@ jobs:
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          python -m pip install --index-url https://artifacts.home.siczb.de/repository/pypi-proxy/simple/ -r requirements-dev.txt
+          python -m pip install -r requirements.txt
 
       - name: Audit Python dependencies
-        uses: pypa/gh-action-pip-audit@v1.1.0
-        with:
-          virtual-environment: .venv
-          inputs: requirements-dev.txt
-          pip-index-url: https://artifacts.home.siczb.de/repository/pypi-proxy/simple/
-          ignore-vulns: |
-            CVE-2025-67221
-            CVE-2026-32597
-            CVE-2026-27448
-            CVE-2026-27459
-            CVE-2026-4539
-            CVE-2026-25645
-            CVE-2026-34073
-            CVE-2026-39892
-            GHSA-pjjw-68hj-v9mw
-            CVE-2026-34513
-            CVE-2026-34525
-            CVE-2026-34519
-            CVE-2026-34520
-            CVE-2026-34517
-            CVE-2026-34993
-            CVE-2026-47265
-            CVE-2026-54273
-            CVE-2026-54279
-            CVE-2026-54277
-            CVE-2026-50269
-            CVE-2026-54276
-            CVE-2026-54278
-            CVE-2026-54280
-            CVE-2026-54274
-            CVE-2026-54275
-            GHSA-537c-gmf6-5ccf
-            PYSEC-2026-175
-            PYSEC-2026-176
-            PYSEC-2026-177
-            PYSEC-2026-178
-            PYSEC-2026-179
+        run: |
+          source .venv/bin/activate
+          python tools/run_pip_audit.py -r requirements.txt
 
   secret-scan:
     runs-on: ubuntu-latest

@@ -57,7 +57,7 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           python -m pip install --upgrade pip --index-url https://artifacts.home.siczb.de/repository/pypi-proxy/simple/
-          python -m pip install --index-url https://artifacts.home.siczb.de/repository/pypi-proxy/simple/ -r requirements-dev.txt
+          python -m pip install --index-url https://artifacts.home.siczb.de/repository/pypi-proxy/simple/ -r requirements.txt
 
       - name: Run Ruff lint
         run: |
@@ -93,7 +93,7 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           python -m pip install --upgrade pip --index-url https://artifacts.home.siczb.de/repository/pypi-proxy/simple/
-          python -m pip install --index-url https://artifacts.home.siczb.de/repository/pypi-proxy/simple/ -r requirements-dev.txt
+          python -m pip install --index-url https://artifacts.home.siczb.de/repository/pypi-proxy/simple/ -r requirements.txt
 
       - name: Run tests with coverage
         run: |

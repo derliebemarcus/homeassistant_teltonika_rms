@@ -128,7 +128,9 @@ async def test_device_list_preserves_existing_filters(
 
     await client.async_list_devices(tags=["ber", "zrh"], device_status="online")
 
-    assert request.await_args.kwargs["params"] == {
+    awaited_call = request.await_args
+    assert awaited_call is not None
+    assert awaited_call.kwargs["params"] == {
         "limit": 50,
         "offset": 0,
         "tags": "ber,zrh",

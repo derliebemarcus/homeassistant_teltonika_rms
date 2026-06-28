@@ -55,9 +55,7 @@ def test_device_list_response_accepts_optional_id_and_nullable_status() -> None:
 
 def test_device_list_response_accepts_legacy_string_status() -> None:
     """Keep compatibility with older RMS responses using textual statuses."""
-    response = DeviceListResponse.model_validate(
-        {"data": [{"id": "1", "status": "online"}]}
-    )
+    response = DeviceListResponse.model_validate({"data": [{"id": "1", "status": "online"}]})
     assert response.data[0].status == "online"
 
 

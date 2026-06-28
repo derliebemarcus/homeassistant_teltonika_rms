@@ -209,7 +209,7 @@ python3 tools/check_translations.py
   - `tests/ha/test_diagnostics_snapshots.py`
 - Dependencies are pinned with `pip-tools`:
   - update the lockfile with `make lock`
-  - CI rejects drift between `requirements-dev.txt` and `requirements.txt`
+  - CI rejects drift between `requirements-dev.in` and `requirements.txt`
 - Static analysis is enforced with:
   - `ruff check .`
   - `ruff format --check .`

@@ -64,14 +64,16 @@
       "automergeType": "pr"
     },
     {
-      "description": "Automerge Python development dependency maintenance",
+      "description": "Group direct Python dependency maintenance",
       "matchManagers": [
-        "pip_requirements"
+        "pip-compile"
       ],
       "matchUpdateTypes": [
         "patch",
         "minor"
       ],
+      "groupName": "Python development dependencies",
+      "groupSlug": "python-development-dependencies",
       "semanticCommitType": "chore",
       "semanticCommitScope": "deps-dev",
       "automerge": true,
@@ -113,5 +115,25 @@
       "automerge": false,
       "dependencyDashboardApproval": true
     }
-  ]
+  ],
+  "constraints": {
+    "python": "==3.14"
+  },
+  "pip-compile": {
+    "managerFilePatterns": [
+      "/(^|/)requirements\\.txt$/"
+    ]
+  },
+  "pip_requirements": {
+    "enabled": false
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "before 06:00 on monday"
+    ],
+    "branchTopic": "home-assistant-lockfile-refresh",
+    "commitMessageAction": "refresh",
+    "commitMessageTopic": "Home Assistant dependency lockfile"
+  }
 }

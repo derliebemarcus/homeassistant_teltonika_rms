@@ -2,16 +2,16 @@ name: Lockfile Consistency
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
   check-lockfile:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - name: Set up Python
@@ -19,19 +19,6 @@ jobs:
         with:
           python-version: "3.14"
       - name: Install pip-tools
-        run: pip install pip-tools
+        run: pip install pip-tools==7.5.3
       - name: Check if requirements.txt is up to date
-        run: |
-          cp requirements.txt requirements.txt.check
-
-          pip-compile \
-            --no-strip-extras \
-            --no-header \
-            requirements-dev.txt \
-            -o requirements.txt.check
-
-          if ! diff requirements.txt requirements.txt.check; then
-            echo "requirements.txt is out of sync with requirements-dev.txt"
-            echo "Please run 'make lock' locally and commit the changes."
-            exit 1
-          fi
+        run: tools/compile_lockfile.sh --check

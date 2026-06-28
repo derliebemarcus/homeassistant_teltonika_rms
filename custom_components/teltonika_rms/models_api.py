@@ -24,9 +24,7 @@ class IdentifiedDevice(RmsApiBaseModel):
     @model_validator(mode="after")
     def validate_identifier(self) -> Self:
         """Require at least one identifier that Home Assistant can persist."""
-        if all(
-            value in (None, "") for value in (self.id, self.serial, self.imei, self.mac)
-        ):
+        if all(value in (None, "") for value in (self.id, self.serial, self.imei, self.mac)):
             raise ValueError("device payload has no stable identifier")
         return self
 

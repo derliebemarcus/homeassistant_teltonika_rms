@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.9.12](https://github.com/derliebemarcus/homeassistant_teltonika_rms/compare/v0.9.11...v0.9.12) (2026-06-27)
+
+
+### Bug Fixes
+
+* align device inventory with current RMS schema ([#79](https://github.com/derliebemarcus/homeassistant_teltonika_rms/issues/79)) ([00763c7](https://github.com/derliebemarcus/homeassistant_teltonika_rms/commit/00763c7a292fa9ab07034281dd5a1c8bca57654a))
+* align release workflow check names ([#69](https://github.com/derliebemarcus/homeassistant_teltonika_rms/issues/69)) ([4de35e2](https://github.com/derliebemarcus/homeassistant_teltonika_rms/commit/4de35e2d16aea3323f5af586f0f04083f7fb37ab))
+* automate dependency updates and align runtime pin ([#70](https://github.com/derliebemarcus/homeassistant_teltonika_rms/issues/70)) ([e3f5038](https://github.com/derliebemarcus/homeassistant_teltonika_rms/commit/e3f5038f3dd1532c323ec700077e5cc276476882))
+* bump mypy from 1.20.2 to 2.1.0 ([#75](https://github.com/derliebemarcus/homeassistant_teltonika_rms/issues/75)) ([d181d8b](https://github.com/derliebemarcus/homeassistant_teltonika_rms/commit/d181d8baa1e37cf8f42bca7617fac874c15f7ea4))
+* **deps:** restore lockfile consistency on main ([#78](https://github.com/derliebemarcus/homeassistant_teltonika_rms/issues/78)) ([2780482](https://github.com/derliebemarcus/homeassistant_teltonika_rms/commit/2780482b68734d445aa23bbcb2d6351e9435ee09))
+
 ## 0.9.11 - 2026-06-24
 
 ### New Features

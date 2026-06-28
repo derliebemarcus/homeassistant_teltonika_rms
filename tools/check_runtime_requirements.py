@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 MANIFEST = Path("custom_components/teltonika_rms/manifest.json")
-DEV_REQUIREMENTS = Path("requirements-dev.txt")
+DEV_REQUIREMENTS = Path("requirements-dev.in")
 PIN_PATTERN = re.compile(r"^\s*([A-Za-z0-9_.-]+)==([^\s;]+)")
 
 
@@ -27,7 +27,7 @@ def parse_pin(value: str) -> tuple[str, str] | None:
 
 
 def main() -> int:
-    """Compare manifest runtime requirements with requirements-dev.txt."""
+    """Compare manifest runtime requirements with requirements-dev.in."""
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     runtime: dict[str, str] = {}
 
@@ -53,9 +53,7 @@ def main() -> int:
         if development_version is None:
             errors.append(f"{name}=={version} is missing from {DEV_REQUIREMENTS}")
         elif development_version != version:
-            errors.append(
-                f"{name} differs: manifest={version}, development={development_version}"
-            )
+            errors.append(f"{name} differs: manifest={version}, development={development_version}")
 
     if errors:
         print("Runtime dependency consistency check failed:", file=sys.stderr)

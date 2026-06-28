@@ -1,17 +1,15 @@
 .PHONY: setup test lint format release mutate audit osv validate hassfest lock lock-upgrade snapshot contract
 
 lock:
-	@echo "Pinning dependencies..."
-	@.venv/bin/python3 -m piptools compile --no-strip-extras --no-header requirements-dev.txt -o requirements.txt
+	@tools/compile_lockfile.sh
 
 lock-upgrade:
-	@echo "Upgrading pinned dependencies..."
-	@.venv/bin/python3 -m piptools compile --upgrade --no-strip-extras --no-header requirements-dev.txt -o requirements.txt
+	@tools/compile_lockfile.sh --upgrade
 
 setup:
 	@echo "Setting up development environment..."
 	@python3 -m venv .venv
-	@.venv/bin/python3 -m pip install -r requirements-dev.txt
+	@.venv/bin/python3 -m pip install -r requirements.txt
 	@tools/install_venv_activation_hook.sh
 	@tools/install_git_hooks.sh
 	@echo "Setup complete. Git hooks are activated."
@@ -41,7 +39,7 @@ mutate:
 
 audit:
 	@echo "Running vulnerability audit on dependencies..."
-	@.venv/bin/python3 -m pip_audit -r requirements-dev.txt --ignore-vuln CVE-2025-67221 --ignore-vuln CVE-2026-32597 --ignore-vuln CVE-2026-27448 --ignore-vuln CVE-2026-27459 --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-25645 --ignore-vuln CVE-2026-34073 --ignore-vuln CVE-2026-39892 --ignore-vuln GHSA-pjjw-68hj-v9mw --ignore-vuln CVE-2026-34513 --ignore-vuln CVE-2026-34525 --ignore-vuln CVE-2026-34519 --ignore-vuln CVE-2026-34520 --ignore-vuln CVE-2026-34517
+	@.venv/bin/python3 tools/run_pip_audit.py -r requirements.txt
 # Engine Detection
 ENGINE := $(shell if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; else echo "none"; fi)
 
