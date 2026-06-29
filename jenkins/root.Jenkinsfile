@@ -17,7 +17,14 @@ void run(def scmConfig) {
         modules.execution = load 'jenkins/execution.groovy'
     }
 
-    properties([disableConcurrentBuilds()])
+    if (env.BRANCH_NAME == 'main') {
+        properties([
+            disableConcurrentBuilds(),
+            pipelineTriggers([cron('H H * * 6')])
+        ])
+    } else {
+        properties([disableConcurrentBuilds()])
+    }
 
     env.CI_BASE_IMAGE = 'registry.home.siczb.de/siczb/python-ci:latest'
     env.CI_IMAGE = "registry.home.siczb.de/siczb/teltonika-rms-ci:${env.BUILD_NUMBER}"

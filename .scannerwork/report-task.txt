@@ -1,6 +1,0 @@
-projectKey=teltonika_rms
-serverUrl=https://sonarqube.home.siczb.de
-serverVersion=26.6.0.123539
-dashboardUrl=https://sonarqube.home.siczb.de/dashboard?id=teltonika_rms
-ceTaskId=93cbce40-8c20-4333-b00a-d3be15619f3c
-ceTaskUrl=https://sonarqube.home.siczb.de/api/ce/task?id=93cbce40-8c20-4333-b00a-d3be15619f3c

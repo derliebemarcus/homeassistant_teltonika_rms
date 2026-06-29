@@ -14,6 +14,7 @@ on:
 permissions:
   contents: write
   actions: read
+  statuses: read
 
 concurrency:
   group: publish-release-${{ github.ref_name }}
@@ -66,56 +67,125 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const sha = process.env.TARGET_SHA;
-            const required = [
-              "Continuous Integration",
-              "CodeQL",
-              "Security Gates",
-              "OSV-Scanner",
+
+            const requiredWorkflows = [
               "Validate HACS & Hassfest",
-              "Lockfile Consistency",
-              "Mutation Testing",
+              "Runtime Dependency Consistency",
             ];
-            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            const requiredStatuses = [
+              "Continuous Integration / Jenkins",
+            ];
+
+            const sleep = (ms) =>
+              new Promise((resolve) => setTimeout(resolve, ms));
             const deadline = Date.now() + 20 * 60 * 1000;
 
             while (true) {
-              const { data } = await github.rest.actions.listWorkflowRunsForRepo({
-                owner,
-                repo,
-                event: "push",
-                per_page: 100,
-              });
+              const { data: workflowData } =
+                await github.rest.actions.listWorkflowRunsForRepo({
+                  owner,
+                  repo,
+                  event: "push",
+                  per_page: 100,
+                });
 
-              const runs = data.workflow_runs.filter(
-                (run) => run.head_sha === sha && required.includes(run.name),
+              const matchingRuns = workflowData.workflow_runs.filter(
+                (run) =>
+                  run.head_sha === sha &&
+                  requiredWorkflows.includes(run.name),
               );
-              const byName = new Map(runs.map((run) => [run.name, run]));
-              const missing = required.filter((name) => !byName.has(name));
-              const pending = required.filter((name) => {
-                const run = byName.get(name);
+
+              const workflowsByName = new Map();
+              for (const run of matchingRuns) {
+                if (!workflowsByName.has(run.name)) {
+                  workflowsByName.set(run.name, run);
+                }
+              }
+
+              const missingWorkflows = requiredWorkflows.filter(
+                (name) => !workflowsByName.has(name),
+              );
+              const pendingWorkflows = requiredWorkflows.filter((name) => {
+                const run = workflowsByName.get(name);
                 return run && run.status !== "completed";
               });
-              const failed = required.filter((name) => {
-                const run = byName.get(name);
-                return run && run.status === "completed" && run.conclusion !== "success";
+              const failedWorkflows = requiredWorkflows.filter((name) => {
+                const run = workflowsByName.get(name);
+                return (
+                  run &&
+                  run.status === "completed" &&
+                  run.conclusion !== "success"
+                );
+              });
+
+              const { data: statusData } =
+                await github.rest.repos.getCombinedStatusForRef({
+                  owner,
+                  repo,
+                  ref: sha,
+                  per_page: 100,
+                });
+
+              const statusesByContext = new Map();
+              for (const status of statusData.statuses) {
+                if (!statusesByContext.has(status.context)) {
+                  statusesByContext.set(status.context, status);
+                }
+              }
+
+              const missingStatuses = requiredStatuses.filter(
+                (context) => !statusesByContext.has(context),
+              );
+              const pendingStatuses = requiredStatuses.filter(
+                (context) =>
+                  statusesByContext.get(context)?.state === "pending",
+              );
+              const failedStatuses = requiredStatuses.filter((context) => {
+                const state = statusesByContext.get(context)?.state;
+                return state === "failure" || state === "error";
               });
 
               core.info(
-                `Waiting for checks on ${sha}: missing=[${missing.join(", ")}] pending=[${pending.join(", ")}] failed=[${failed.join(", ")}]`,
+                [
+                  `Waiting for checks on ${sha}:`,
+                  `missing workflows=[${missingWorkflows.join(", ")}]`,
+                  `pending workflows=[${pendingWorkflows.join(", ")}]`,
+                  `failed workflows=[${failedWorkflows.join(", ")}]`,
+                  `missing statuses=[${missingStatuses.join(", ")}]`,
+                  `pending statuses=[${pendingStatuses.join(", ")}]`,
+                  `failed statuses=[${failedStatuses.join(", ")}]`,
+                ].join(" "),
               );
 
-              if (failed.length > 0) {
-                core.setFailed(`Required checks failed for ${sha}: ${failed.join(", ")}`);
+              if (
+                failedWorkflows.length > 0 ||
+                failedStatuses.length > 0
+              ) {
+                core.setFailed(
+                  `Required checks failed for ${sha}: ` +
+                    [
+                      ...failedWorkflows,
+                      ...failedStatuses,
+                    ].join(", "),
+                );
                 return;
               }
 
-              if (missing.length === 0 && pending.length === 0) {
+              if (
+                missingWorkflows.length === 0 &&
+                pendingWorkflows.length === 0 &&
+                missingStatuses.length === 0 &&
+                pendingStatuses.length === 0
+              ) {
                 core.info(`All required checks succeeded for ${sha}.`);
                 return;
               }
 
               if (Date.now() > deadline) {
-                core.setFailed(`Timed out waiting for required checks on ${sha}.`);
+                core.setFailed(
+                  `Timed out waiting for required checks on ${sha}.`,
+                );
                 return;
               }
 
