@@ -355,7 +355,7 @@ pyyaml==6.0.3
     #   annotatedyaml
     #   homeassistant
     #   libcst
-regex==2026.5.9
+regex==2026.6.28
     # via sentence-stream
 requests==2.34.2
     # via

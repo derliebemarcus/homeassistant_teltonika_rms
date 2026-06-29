@@ -42,14 +42,7 @@ class SpecCompatibleRmsApiClient(RmsApiClient):
         previous_page_signature: tuple[str, ...] | None = None
 
         while max_pages is None or page_count < max_pages:
-            params: dict[str, Any] = {"limit": page_size, "offset": offset}
-            if tags:
-                # The current OpenAPI contract exposes tag_id rather than tag names.
-                # Preserve the existing option until that migration is handled separately.
-                params["tags"] = ",".join(tags)
-            if device_status:
-                params["status"] = device_status
-
+            params = _device_list_params(page_size, offset, tags, device_status)
             data, meta = await self.async_request("GET", path, params=params)
             raw_batch = _coerce_list(data)
             batch = [_normalize_device_record(item) for item in raw_batch]
@@ -64,12 +57,7 @@ class SpecCompatibleRmsApiClient(RmsApiClient):
                 break
             previous_page_signature = page_signature
 
-            for item in batch:
-                identity = _device_identity(item)
-                if identity in seen_records:
-                    continue
-                seen_records.add(identity)
-                devices.append(item)
+            _append_unseen_devices(devices, batch, seen_records)
 
             page_count += 1
             response_count = len(raw_batch)
@@ -82,6 +70,37 @@ class SpecCompatibleRmsApiClient(RmsApiClient):
     async def async_get_device_state(self, device_id: str) -> dict[str, Any]:
         """Normalize documented numeric status values returned by device detail."""
         return _normalize_device_record(await super().async_get_device_state(device_id))
+
+
+def _device_list_params(
+    page_size: int,
+    offset: int,
+    tags: list[str] | None,
+    device_status: str | None,
+) -> dict[str, Any]:
+    """Build device-list query parameters while preserving legacy filters."""
+    params: dict[str, Any] = {"limit": page_size, "offset": offset}
+    if tags:
+        # The current OpenAPI contract exposes tag_id rather than tag names.
+        # Preserve the existing option until that migration is handled separately.
+        params["tags"] = ",".join(tags)
+    if device_status:
+        params["status"] = device_status
+    return params
+
+
+def _append_unseen_devices(
+    devices: list[dict[str, Any]],
+    batch: list[dict[str, Any]],
+    seen_records: set[str],
+) -> None:
+    """Append only records not already returned by an earlier page."""
+    for item in batch:
+        identity = _device_identity(item)
+        if identity in seen_records:
+            continue
+        seen_records.add(identity)
+        devices.append(item)
 
 
 def _normalize_device_record(record: dict[str, Any]) -> dict[str, Any]:
