@@ -2,6 +2,7 @@ void runGate() {
     stage('Finalize Quality Gate Result') {
         node('klymene') {
             def execution = load 'jenkins/execution.groovy'
+            def checks = load 'jenkins/checks.groovy'
             execution.normalizeWorkspace()
             deleteDir()
             [
@@ -15,8 +16,6 @@ void runGate() {
                 'qa-failure-marker-trivy',
                 'qa-failure-marker-codeql'
             ].each { execution.unstashOptional(it) }
-            def checks = load 'jenkins/checks.groovy'
-            execution = load 'jenkins/execution.groovy'
             checks.run('Finalize Quality Gate Result') { logFile ->
                 execution.loggedShell(
                     'find .ci-failures -type f -print 2>/dev/null || true',
