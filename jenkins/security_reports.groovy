@@ -66,6 +66,17 @@ def codeqlBranch(def scmConfig) {
                 try {
                     deleteDir()
                     checkout scmConfig
+                    if (env.CHANGE_ID) {
+                        sh """
+                            git fetch --no-tags --force origin \
+                              +refs/pull/${env.CHANGE_ID}/merge:refs/remotes/origin/pr/${env.CHANGE_ID}/merge
+                            git checkout --detach refs/remotes/origin/pr/${env.CHANGE_ID}/merge
+                        """
+                    }
+                    def analysisCommit = sh(
+                        script: 'git rev-parse HEAD',
+                        returnStdout: true
+                    ).trim()
                     def checks = load 'jenkins/checks.groovy'
                     def execution = load 'jenkins/execution.groovy'
                     def external = load 'jenkins/external_results.groovy'
@@ -95,11 +106,13 @@ def codeqlBranch(def scmConfig) {
                                 """, logFile)
                                 external.publishSarif(
                                     "${env.SB_NAME}/sonar/codeql/codeql-python.sarif",
-                                    'CodeQL'
+                                    'CodeQL',
+                                    analysisCommit
                                 )
                                 external.publishSarif(
                                     "${env.SB_NAME}/sonar/codeql/codeql-actions.sarif",
-                                    'CodeQL'
+                                    'CodeQL',
+                                    analysisCommit
                                 )
                             }
                         }
