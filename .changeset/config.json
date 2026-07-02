@@ -1,4 +1,12 @@
 {
   "changelog": "@changesets/cli/changelog",
-  "baseBranch": "main"
+  "commit": false,
+  "fixed": [],
+  "linked": [],
+  "access": "restricted",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [],
+  "bumpVersionsWithWorkspaceProtocolOnly": false,
+  "privatePackages": { "version": true, "tag": false }
 }
