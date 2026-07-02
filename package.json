@@ -3,6 +3,7 @@
   "version": "0.10.0",
   "private": true,
   "scripts": {
+    "check:ha-minimum": "node scripts/check-supported-home-assistant.mjs",
     "version:sync": "node scripts/sync-version.mjs"
   },
   "engines": {
