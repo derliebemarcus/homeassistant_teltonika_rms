@@ -1,9 +1,9 @@
 name: Regenerate Home Assistant lockfile
 
 on:
-  push:
+  pull_request:
     branches:
-      - maintenance/116-complete-ci-cd-migration
+      - main
 
 permissions:
   contents: read
