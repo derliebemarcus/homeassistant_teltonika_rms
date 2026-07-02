@@ -1,0 +1,7 @@
+{
+  "name": "homeassistant_teltonika_rms",
+  "version": "0.10.0",
+  "scripts": {
+    "version:sync": "node scripts/sync-version.mjs"
+  }
+}

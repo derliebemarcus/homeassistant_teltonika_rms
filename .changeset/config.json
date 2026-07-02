@@ -1,0 +1,4 @@
+{
+  "changelog": "@changesets/cli/changelog",
+  "baseBranch": "main"
+}
