@@ -1,0 +1,43 @@
+
+name: Issue Status Sync
+
+
+
+on:
+
+  create:
+
+  delete:
+
+  pull_request:
+
+    types:
+
+      - opened
+
+      - reopened
+
+      - synchronize
+
+      - ready_for_review
+
+      - closed
+
+
+
+permissions:
+
+  contents: read
+
+  issues: write
+
+  pull-requests: read
+
+
+
+jobs:
+
+  sync:
+
+    uses: derliebemarcus/maintenance/.github/workflows/issue-status-sync.yml@main
+
