@@ -1,0 +1,59 @@
+name: Validate ticket naming
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate branch and PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate naming convention
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_CREATED_AT: ${{ github.event.pull_request.created_at }}
+          ACTOR: ${{ github.actor }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cutoff='2026-07-02T08:10:46Z'
+
+          case "$ACTOR" in
+            dependabot[bot]|github-actions[bot])
+              echo "Trusted automation is exempt from ticket naming."
+              exit 0
+              ;;
+          esac
+
+          if [[ "$PR_CREATED_AT" < "$cutoff" ]]; then
+            echo "Legacy pull request created before $cutoff; branch naming is not enforced."
+            exit 0
+          fi
+
+          branch_pattern='^(feature|enhancement|bugfix|hotfix|refactoring|maintenance|documentation|security|test|research)/([0-9]+)-[a-z0-9]+(-[a-z0-9]+)*$'
+          title_pattern='^#([0-9]+)[[:space:]]+.+$'
+
+          if [[ ! "$HEAD_REF" =~ $branch_pattern ]]; then
+            echo "::error::Branch '$HEAD_REF' must match <ticket-type>/<ticket-number>-<ticket-title-slug>."
+            exit 1
+          fi
+          branch_ticket="${BASH_REMATCH[2]}"
+
+          if [[ ! "$PR_TITLE" =~ $title_pattern ]]; then
+            echo "::error::PR title '$PR_TITLE' must begin with '#<ticket-number> '."
+            exit 1
+          fi
+          title_ticket="${BASH_REMATCH[1]}"
+
+          if [[ "$branch_ticket" != "$title_ticket" ]]; then
+            echo "::error::Branch ticket #$branch_ticket does not match PR title ticket #$title_ticket."
+            exit 1
+          fi
+
+          echo "Naming convention valid for ticket #$branch_ticket."
