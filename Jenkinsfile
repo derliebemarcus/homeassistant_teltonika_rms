@@ -78,6 +78,7 @@ ciHomeAssistantIntegration(
             python3 tools/run_pip_audit.py -r requirements.txt --format json \
               --output build/reports/pip-audit/pip-audit.json
         ''',
+        trivy: 'bash tools/run_trivy.sh',
         mutation: '''
             mkdir -p build/reports/mutation
             python3 -m pytest --cov=custom_components/teltonika_rms \
