@@ -9,4 +9,51 @@ permissions:
 
 jobs:
   validate:
-    uses: derliebemarcus/maintenance/.github/workflows/validate-ticket-naming.yml@main
+    name: Validate branch and PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate naming convention
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_CREATED_AT: ${{ github.event.pull_request.created_at }}
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+          ACTOR: ${{ github.actor }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cutoff='2026-07-02T08:10:46Z'
+          case "$ACTOR" in
+            dependabot[bot]|github-actions[bot]) exit 0 ;;
+          esac
+          if [[ "$PR_CREATED_AT" < "$cutoff" ]]; then
+            echo "Legacy pull request created before $cutoff; naming is not enforced."
+            exit 0
+          fi
+          type_pattern='(feature|enhancement|bugfix|hotfix|refactoring|maintenance|documentation|security|test|research)'
+          slug_pattern='[a-z0-9]+(-[a-z0-9]+)*'
+          legacy_pattern="^${type_pattern}/([0-9]+)-${slug_pattern}$"
+          repository_pattern="^${type_pattern}/([a-z0-9][a-z0-9._-]*)-([0-9]+)-${slug_pattern}$"
+          title_pattern='^#([0-9]+)[[:space:]]+.+$'
+          if [[ "$HEAD_REF" =~ $legacy_pattern ]]; then
+            branch_repository="$REPOSITORY_NAME"
+            branch_ticket="${BASH_REMATCH[2]}"
+          elif [[ "$HEAD_REF" =~ $repository_pattern ]]; then
+            branch_repository="${BASH_REMATCH[2]}"
+            branch_ticket="${BASH_REMATCH[3]}"
+          else
+            echo "::error::Branch '$HEAD_REF' does not match an accepted ticket format."
+            echo "::error::<ticket-type>/<ticket-number>-<ticket-title-slug>"
+            echo "::error::<ticket-type>/<repository>-<ticket-number>-<ticket-title-slug>"
+            exit 1
+          fi
+          if [[ ! "$PR_TITLE" =~ $title_pattern ]]; then
+            echo "::error::PR title '$PR_TITLE' must begin with '#<ticket-number> '."
+            exit 1
+          fi
+          title_ticket="${BASH_REMATCH[1]}"
+          if [[ "$branch_ticket" != "$title_ticket" ]]; then
+            echo "::error::Branch ticket #$branch_ticket does not match PR title #$title_ticket."
+            exit 1
+          fi
+          echo "Naming convention valid for $branch_repository ticket #$branch_ticket."
