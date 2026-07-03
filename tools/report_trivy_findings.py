@@ -24,10 +24,7 @@ def _print_vulnerabilities(result: dict[str, Any]) -> int:
         package = _text(finding.get("PkgName"))
         installed = _text(finding.get("InstalledVersion"))
         fixed = _text(finding.get("FixedVersion"))
-        print(
-            f"{severity} {identifier}: {package} {installed} "
-            f"(fixed: {fixed}; target: {target})"
-        )
+        print(f"{severity} {identifier}: {package} {installed} (fixed: {fixed}; target: {target})")
     return len(findings)
 
 
