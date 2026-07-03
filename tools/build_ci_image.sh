@@ -7,7 +7,7 @@ printf '%s\n' \
   'FROM registry.home.siczb.de/siczb/python-ci:latest' \
   'WORKDIR /build' \
   'USER root' \
-  'RUN (apt-get update && apt-get install -y git curl ca-certificates) || (apk add --no-cache git curl ca-certificates) || true' \
+  'RUN (apt-get update && apt-get install -y git curl ca-certificates nodejs npm) || (apk add --no-cache git curl ca-certificates nodejs npm) || true' \
   'COPY requirements.txt ./' \
   'RUN python3 -m pip install --upgrade pip --index-url https://artifacts.home.siczb.de/repository/pypi-proxy/simple/' \
   'RUN python3 -m pip install --index-url https://artifacts.home.siczb.de/repository/pypi-proxy/simple/ -r requirements.txt' \
@@ -15,6 +15,8 @@ printf '%s\n' \
   'COPY custom_components ./custom_components' \
   'COPY tests ./tests' \
   'COPY tools ./tools' \
+  'ENV HOME=/tmp' \
+  'USER 980:975' \
   > Dockerfile.ci
 
 podman build --pull=never --tag "${image}" --file Dockerfile.ci .
