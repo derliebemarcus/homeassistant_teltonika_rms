@@ -2,6 +2,7 @@
 set -euo pipefail
 
 readonly image="registry.home.siczb.de/siczb/teltonika-rms-ci:${BUILD_NUMBER}"
+readonly ci_user="$(id -u):$(id -g)"
 
 printf '%s\n' \
   'FROM registry.home.siczb.de/siczb/python-ci:latest' \
@@ -16,7 +17,7 @@ printf '%s\n' \
   'COPY tests ./tests' \
   'COPY tools ./tools' \
   'ENV HOME=/tmp' \
-  'USER 980:975' \
+  "USER ${ci_user}" \
   > Dockerfile.ci
 
 podman build --pull=never --tag "${image}" --file Dockerfile.ci .
