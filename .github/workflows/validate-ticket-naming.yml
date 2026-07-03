@@ -1,3 +1,4 @@
+# Supports local and repository-qualified ticket branches.
 name: Validate ticket naming
 
 on:
@@ -9,4 +10,34 @@ permissions:
 
 jobs:
   validate:
-    uses: derliebemarcus/maintenance/.github/workflows/validate-ticket-naming.yml@main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate naming convention
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_CREATED_AT: ${{ github.event.pull_request.created_at }}
+          ACTOR: ${{ github.actor }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$ACTOR" in
+            dependabot[bot]|github-actions[bot]) exit 0 ;;
+          esac
+          [[ "$PR_CREATED_AT" < '2026-07-02T08:10:46Z' ]] && exit 0
+          types='(feature|enhancement|bugfix|hotfix|refactoring|maintenance|documentation|security|test|research)'
+          slug='[a-z0-9]+(-[a-z0-9]+)*'
+          legacy="^${types}/([0-9]+)-${slug}$"
+          qualified="^${types}/([a-z0-9][a-z0-9._-]*)-([0-9]+)-${slug}$"
+          title='^#([0-9]+)[[:space:]]+.+$'
+          if [[ "$HEAD_REF" =~ $legacy ]]; then
+            branch_ticket="${BASH_REMATCH[2]}"
+          elif [[ "$HEAD_REF" =~ $qualified ]]; then
+            branch_ticket="${BASH_REMATCH[3]}"
+          else
+            echo "::error::Invalid ticket branch: $HEAD_REF"
+            exit 1
+          fi
+          [[ "$PR_TITLE" =~ $title ]] || exit 1
+          title_ticket="${BASH_REMATCH[1]}"
+          [[ "$branch_ticket" == "$title_ticket" ]] || exit 1
