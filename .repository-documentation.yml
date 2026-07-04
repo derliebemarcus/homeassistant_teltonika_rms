@@ -1,0 +1,8 @@
+documentation:
+  standard: repository-documentation
+  standard_version: 1
+  profile: library
+  architecture: arc42-lite
+  diagrams: c4
+  decisions: madr
+  publishing: none
