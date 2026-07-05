@@ -278,3 +278,7 @@ Their portfolio includes industrial 4G/5G routers, network switches, GPS vehicle
 <br/>
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-derliebemarcus-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/derliebemarcus)
+
+## Detailed documentation
+
+Architecture, development, compatibility, and operations for Teltonika RMS Home Assistant Integration are documented in [docs/index.md](docs/index.md).

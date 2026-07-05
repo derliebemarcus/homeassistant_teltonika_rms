@@ -1,5 +1,10 @@
 @Library('jenkins-shared-library@main') _
 
+ciRepositoryDocumentationContract(
+    scm: scm,
+    agentLabel: 'klymene',
+)
+
 if (ciDocumentationOnlyShortcut(
     scm: scm,
     agentLabel: 'klymene',
