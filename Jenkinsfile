@@ -1,5 +1,21 @@
 @Library('jenkins-shared-library@main') _
 
+if (ciDocumentationOnlyShortcut(
+    scm: scm,
+    agentLabel: 'klymene',
+    repository: [
+        owner: 'derliebemarcus',
+        name: 'homeassistant_teltonika_rms',
+    ],
+    github: [
+        credentialId: 'github token',
+        statusContext: 'Continuous Integration / Jenkins',
+        title: 'Teltonika RMS Quality Gates',
+    ],
+)) {
+    return
+}
+
 ciHomeAssistantIntegration(
     scm: scm,
     agentLabel: 'klymene',
