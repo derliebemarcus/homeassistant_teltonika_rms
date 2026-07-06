@@ -19,3 +19,5 @@ This repository declares the `library` profile of Repository Documentation Stand
 - [Runbook](operations/runbook.md)
 - [Troubleshooting](operations/troubleshooting.md)
 - [Rollback](operations/rollback.md)
+
+Documentation changes are validated through the repository Jenkins contract.
