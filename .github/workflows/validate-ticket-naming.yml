@@ -1,4 +1,5 @@
 # Supports local and repository-qualified ticket branches.
+# Documentation branches accept both documentation and docs prefixes.
 name: Validate ticket naming
 
 on:
