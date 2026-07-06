@@ -1,13 +1,22 @@
 # Testing
 
-Run the repository's local quality checks before opening a pull request:
+Create the same project environment used by Jenkins:
 
 ```bash
-make validate
-python3 -m pytest tests/unit tests/ha
-ruff check .
-ruff format --check .
-mypy .
+python3.14 -m venv .ci-venv
+.ci-venv/bin/python -m pip install --upgrade pip setuptools wheel
+.ci-venv/bin/python -m pip install --requirement requirements.txt
 ```
 
-Jenkins remains authoritative for the complete quality, analysis, security, and release contract.
+Run the main checks through that interpreter:
+
+```bash
+.ci-venv/bin/python -m pytest tests/unit tests/ha
+.ci-venv/bin/python -m ruff check .
+.ci-venv/bin/python -m ruff format --check .
+.ci-venv/bin/python -m mypy .
+.ci-venv/bin/python tools/check_translations.py
+```
+
+Jenkins performs this installation once and stashes `.ci-venv` for all parallel
+stages. Containers run with the Jenkins UID and GID preserved.
