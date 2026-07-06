@@ -1,4 +1,5 @@
 # Supports local and repository-qualified ticket branches.
+# Documentation branches accept both documentation and docs prefixes.
 name: Validate ticket naming
 
 on:
@@ -25,7 +26,7 @@ jobs:
             dependabot[bot]|github-actions[bot]) exit 0 ;;
           esac
           [[ "$PR_CREATED_AT" < '2026-07-02T08:10:46Z' ]] && exit 0
-          types='(feature|enhancement|bugfix|hotfix|refactoring|maintenance|documentation|security|test|research)'
+          types='(feature|enhancement|bugfix|hotfix|refactoring|maintenance|documentation|docs|security|test|research)'
           slug='[a-z0-9]+(-[a-z0-9]+)*'
           legacy="^${types}/([0-9]+)-${slug}$"
           qualified="^${types}/([a-z0-9][a-z0-9._-]*)-([0-9]+)-${slug}$"
