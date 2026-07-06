@@ -33,42 +33,17 @@ ciHomeAssistantIntegration(
     componentPath: 'custom_components/teltonika_rms',
     manifestPath: 'custom_components/teltonika_rms/manifest.json',
     pythonVersion: '3.14',
-    pythonCommand: 'python3',
+    virtualEnvironment: '.ci-venv',
+    pythonCommand: '.ci-venv/bin/python',
     requirementsFile: 'requirements.txt',
     constraintsFile: '',
     testPaths: ['tests/unit', 'tests/ha'],
     coverageFloor: 97.1,
     reportRoot: 'build/reports',
-    runtime: [
-        mode: 'container',
-        image: "registry.home.siczb.de/siczb/teltonika-rms-ci:${env.BUILD_NUMBER}",
-        engine: 'podman',
-        shell: '/bin/sh',
-        pullPolicy: 'never',
-        keepId: true,
-        passEnvironment: [
-            'CHANGE_TARGET',
-            'GIT_PREVIOUS_SUCCESSFUL_COMMIT',
-            'VERSION',
-            'COMMIT_HASH',
-        ],
-    ],
-    initializationRuntime: 'host',
-    initializationCommand: 'bash tools/build_ci_image.sh',
-    cleanupCommand: '''
-        podman rmi "registry.home.siczb.de/siczb/teltonika-rms-ci:${BUILD_NUMBER}" || true
-    ''',
-    workspaceNormalizationCommand: '''
-        set +e
-        [ -e "$WORKSPACE" ] || exit 0
-        sudo chown -R "$(id -u):$(id -g)" "$WORKSPACE" || true
-        sudo chmod -R u+rwX "$WORKSPACE" || true
-    ''',
-    prepareCommand: '',
     commands: [
         pytest: '''
             mkdir -p build/reports/pytest
-            python3 -m pytest tests/unit tests/ha \
+            .ci-venv/bin/python -m pytest tests/unit tests/ha \
               --junitxml=build/reports/pytest/pytest.xml \
               --cov=. --cov-config=.coveragerc \
               --cov-report=xml:build/reports/pytest/coverage.xml \
@@ -76,39 +51,44 @@ ciHomeAssistantIntegration(
         ''',
         ruffLint: '''
             mkdir -p build/reports/ruff
-            python3 -m ruff check . --output-format=json \
+            .ci-venv/bin/python -m ruff check . --output-format=json \
               --output-file=build/reports/ruff/ruff-report.json
         ''',
         ruffFormat: '''
             mkdir -p build/reports/ruff-format
-            python3 -m ruff format --check . \
+            .ci-venv/bin/python -m ruff format --check . \
               > build/reports/ruff-format/ruff-format.txt 2>&1
         ''',
         mypy: '''
             mkdir -p build/reports/mypy
-            python3 -m mypy . --show-column-numbers \
+            .ci-venv/bin/python -m mypy . --show-column-numbers \
               --junit-xml build/reports/mypy/mypy.xml
         ''',
         translations: '''
             mkdir -p build/reports/translations
-            python3 tools/check_translations.py \
+            .ci-venv/bin/python tools/check_translations.py \
               > build/reports/translations/translations.txt 2>&1
         ''',
         pipAudit: '''
             mkdir -p build/reports/pip-audit
-            python3 tools/run_pip_audit.py -r requirements.txt --format json \
+            .ci-venv/bin/python tools/run_pip_audit.py \
+              -r requirements.txt --format json \
               --output build/reports/pip-audit/pip-audit.json
         ''',
         trivy: 'bash tools/run_trivy.sh',
         mutation: '''
             mkdir -p build/reports/mutation
-            python3 -m pytest --cov=custom_components/teltonika_rms \
+            .ci-venv/bin/python -m pytest \
+              --cov=custom_components/teltonika_rms \
               --cov-context=test --cov-config=.coveragerc tests/
-            python3 -m mutmut run
-            python3 -m mutmut results \
+            .ci-venv/bin/python -m mutmut run
+            .ci-venv/bin/python -m mutmut results \
               > build/reports/mutation/mutation-results.txt || true
         ''',
-        dependencyConsistency: 'npm run check:ha-minimum && tools/compile_lockfile.sh --check',
+        dependencyConsistency: '''
+            npm run check:ha-minimum
+            PATH="$PWD/.ci-venv/bin:$PATH" tools/compile_lockfile.sh --check
+        ''',
     ],
     mutation: [
         artifacts: 'build/reports/mutation/**,.mutmut-cache',
