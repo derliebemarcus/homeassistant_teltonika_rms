@@ -10,6 +10,10 @@ During initialization, Jenkins creates `.ci-venv` once from the versioned
 parallel report and gate stages. Every Python command runs through
 `.ci-venv/bin/python`. No project-specific image is built, pushed, or removed.
 
+The dependency-consistency gate compiles the lockfile with the configured package
+index but deliberately omits environment-specific index and trusted-host directives
+from the committed `requirements.txt`.
+
 The profile retains Pytest and coverage, Ruff lint and format, Mypy, translation
 validation, Pip Audit, mutation testing, Hassfest, SonarQube, Coveralls, Gitleaks,
 Trivy, CodeQL, OSV, Actionlint, repository rules, and dependency consistency. Mutation
