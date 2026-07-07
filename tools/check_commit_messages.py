@@ -85,6 +85,11 @@ def _is_dependabot_commit(sha: str) -> bool:
     )
 
 
+def _is_merge_commit(sha: str) -> bool:
+    commit_and_parents = _git("rev-list", "--parents", "-n", "1", sha).split()
+    return len(commit_and_parents) > 2
+
+
 def main() -> int:
     commit_range = sys.argv[1] if len(sys.argv) > 1 else "HEAD^..HEAD"
     shas = [sha for sha in _git("rev-list", "--reverse", commit_range).splitlines() if sha]
@@ -94,7 +99,7 @@ def main() -> int:
 
     failed = False
     for sha in shas:
-        if _is_dependabot_commit(sha):
+        if _is_merge_commit(sha) or _is_dependabot_commit(sha):
             continue
         message = _git("log", "-1", "--format=%B", sha)
         error = validate_message(message)

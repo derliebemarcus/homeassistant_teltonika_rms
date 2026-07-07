@@ -9,6 +9,7 @@
 - Commit messages must follow repository rules:
   - single-line: `add:`, `change:`, `deprecate:`, `remove:`, or `fix:`
   - multi-line: short summary, blank line, then categorized body lines
+  - generated merge commits are exempt because their pull-request commits were validated
 - Release notes must contain these headings in this order:
   - `### New Features`
   - `### Improvements`
