@@ -15,3 +15,9 @@ Compare the deployed values with the configuration reference and remove stale ge
 ## A release or deployment is unhealthy
 
 Stop further automation and follow the rollback procedure.
+
+## Shared CI image failures
+
+Confirm Harbor can pull `homeassistant-integration-ci:3.14`, then inspect dependency
+installation and the bootstrap stash. Dependency failures belong to `requirements.txt`;
+missing native or shared tools require a maintenance image update.

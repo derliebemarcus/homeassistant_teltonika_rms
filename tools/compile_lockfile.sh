@@ -13,7 +13,13 @@ for arg in "$@"; do
   esac
 done
 
-compile_args=(--no-strip-extras requirements-dev.in -o requirements.txt)
+compile_args=(
+  --no-strip-extras
+  --no-emit-index-url
+  --no-emit-trusted-host
+  requirements-dev.in
+  -o requirements.txt
+)
 if [ "$UPGRADE" -eq 1 ]; then
   compile_args=(--upgrade "${compile_args[@]}")
 fi

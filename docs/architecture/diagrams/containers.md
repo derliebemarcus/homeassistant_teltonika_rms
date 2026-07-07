@@ -2,12 +2,9 @@
 
 ```mermaid
 flowchart LR
-    Component1["authentication and token handling"]
-    Component2["RMS API client and envelope validation"]
-    Component3["request-budget-aware coordinators"]
-    Component4["device and entity platforms"]
-    Component5["status-channel and polling fallback"]
-    Component6["diagnostics, translations, and release packaging"]
-    Component1 --> Component2
-    Component2 --> Component3
+    Harbor["Harbor integration CI 3.14"] --> Jenkins["Jenkins container stages"]
+    Requirements["requirements.txt"] --> Venv["Per-build .ci-venv"]
+    Jenkins --> Venv
+    Venv --> Reports["Parallel reports and gates"]
+    Reports --> Outputs["Jenkins, SonarQube, Coveralls and GitHub"]
 ```
