@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from tools.check_commit_messages import _is_dependabot_identity, validate_message
+from unittest.mock import patch
+
+from tools.check_commit_messages import (
+    _is_dependabot_identity,
+    _is_merge_commit,
+    validate_message,
+)
 
 
 def test_validate_message_accepts_repository_formats() -> None:
@@ -43,3 +49,17 @@ def test_dependabot_identity_detection_is_narrow() -> None:
         "github-actions[bot]", "41898282+github-actions[bot]@users.noreply.github.com"
     )
     assert not _is_dependabot_identity("Marcus", "marcus@example.com")
+
+
+def test_merge_commit_detection_uses_parent_count() -> None:
+    with patch(
+        "tools.check_commit_messages._git",
+        return_value="merge-sha parent-one parent-two\n",
+    ):
+        assert _is_merge_commit("merge-sha")
+
+    with patch(
+        "tools.check_commit_messages._git",
+        return_value="commit-sha parent-one\n",
+    ):
+        assert not _is_merge_commit("commit-sha")
