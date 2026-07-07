@@ -4,6 +4,8 @@
 #
 #    pip-compile --no-strip-extras --output-file=requirements.txt requirements-dev.in
 #
+--index-url https://artifacts.home.siczb.de/repository/pypi-proxy/simple/
+
 acme==5.4.0
     # via hass-nabucasa
 aiodns==4.0.4
