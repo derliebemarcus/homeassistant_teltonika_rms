@@ -1,6 +1,6 @@
 {
   "name": "homeassistant_teltonika_rms",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "private": true,
   "scripts": {
     "check:ha-minimum": "node scripts/check-supported-home-assistant.mjs",
