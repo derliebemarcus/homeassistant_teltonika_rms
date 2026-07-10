@@ -1,9 +1,111 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Repository-local Renovate policy for the Teltonika RMS integration",
   "extends": [
-    "local>derliebemarcus/maintenance:python"
+    "config:recommended"
+  ],
+  "timezone": "Europe/Zurich",
+  "schedule": [
+    "before 06:00 on monday"
+  ],
+  "dependencyDashboard": true,
+  "semanticCommits": "enabled",
+  "labels": [
+    "dependencies"
+  ],
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 5,
+  "platformAutomerge": true,
+  "vulnerabilityAlerts": {
+    "labels": [
+      "security",
+      "dependencies"
+    ],
+    "vulnerabilityFixStrategy": "lowest"
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Home Assistant manifest runtime requirements",
+      "managerFilePatterns": [
+        "/^custom_components\\/[^/]+\\/manifest\\.json$/"
+      ],
+      "matchStrings": [
+        "\"(?<depName>[A-Za-z0-9_.-]+)==(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "pypi",
+      "versioningTemplate": "pep440",
+      "depTypeTemplate": "runtime"
+    }
   ],
   "packageRules": [
+    {
+      "description": "Automerge non-major vulnerability fixes after required checks pass",
+      "matchJsonata": [
+        "$exists(vulnerabilityFixVersion) and updateType != 'major'"
+      ],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Automerge GitHub Actions digest, pin, patch and minor updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "digest",
+        "pin",
+        "pinDigest",
+        "patch",
+        "minor"
+      ],
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "ci",
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Require Dependency Dashboard approval for major updates",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false,
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Group compatible Python development dependency updates",
+      "matchManagers": [
+        "pip_requirements",
+        "pip-compile"
+      ],
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
+      "groupName": "Python development dependencies",
+      "groupSlug": "python-development-dependencies",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps-dev",
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Treat Home Assistant manifest runtime dependency updates as releasable fixes",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepTypes": [
+        "runtime"
+      ],
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "deps",
+      "automerge": true,
+      "automergeType": "pr"
+    },
     {
       "description": "Keep python-socketio runtime and test pins together",
       "matchPackageNames": [
