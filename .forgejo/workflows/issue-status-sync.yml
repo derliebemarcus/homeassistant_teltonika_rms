@@ -1,0 +1,92 @@
+name: Issue Status Sync
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, closed]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Synchronize issue status
+        env:
+          API_URL: ${{ forgejo.api_url }}
+          TOKEN: ${{ forgejo.token }}
+          REPOSITORY: ${{ forgejo.repository }}
+          EVENT_PATH: ${{ forgejo.event_path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require("fs");
+          const api = process.env.API_URL.replace(/\/$/, "");
+          const token = process.env.TOKEN;
+          const repository = process.env.REPOSITORY;
+          const event = JSON.parse(fs.readFileSync(process.env.EVENT_PATH, "utf8"));
+          const pull = event.pull_request;
+          const branchPattern = /^[a-z][a-z0-9-]*\/(?:(?<repo>[a-z0-9][a-z0-9._-]*)-)?(?<number>[1-9][0-9]*)-[a-z0-9][a-z0-9-]*$/;
+          const titlePattern = /^#(?<number>[1-9][0-9]*)\s+.+$/;
+
+          async function request(method, path, body) {
+            const response = await fetch(`${api}${path}`, {
+              method,
+              headers: {
+                Accept: "application/json",
+                Authorization: `token ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: body === undefined ? undefined : JSON.stringify(body),
+            });
+            const text = await response.text();
+            if (!response.ok) throw new Error(`${method} ${path}: ${response.status} ${text}`);
+            return text ? JSON.parse(text) : null;
+          }
+
+          async function main() {
+            if (!pull) return;
+            const [owner, repo] = repository.split("/", 2);
+            const base = `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+            const branch = pull.head?.ref ?? "";
+            const branchMatch = branch.match(branchPattern);
+            const titleMatch = (pull.title ?? "").match(titlePattern);
+            if (!branchMatch && !titleMatch) return;
+            if ((branchMatch?.groups?.repo ?? repo) !== repo) return;
+            const branchNumber = branchMatch?.groups?.number;
+            const titleNumber = titleMatch?.groups?.number;
+            if (branchNumber && titleNumber && branchNumber !== titleNumber) {
+              throw new Error(`Branch ticket #${branchNumber} does not match PR title #${titleNumber}.`);
+            }
+            const number = Number(branchNumber ?? titleNumber);
+            const issuePath = `${base}/issues/${number}`;
+
+            if (["opened", "edited", "synchronize", "reopened"].includes(event.action)) {
+              const issue = await request("GET", issuePath);
+              for (const label of issue.labels ?? []) {
+                if (label.name?.startsWith("status:")) {
+                  await request("DELETE", `${issuePath}/labels/${label.id}`);
+                }
+              }
+              const labels = await request("GET", `${base}/labels?limit=100`);
+              const target = labels.find((label) => label.name === "status:in-progress");
+              if (!target) throw new Error("Missing label status:in-progress.");
+              await request("PATCH", issuePath, { state: "open" });
+              await request("POST", `${issuePath}/labels`, { labels: [target.id] });
+              return;
+            }
+
+            if (event.action !== "closed" || pull.merged !== true) return;
+            const openPulls = await request("GET", `${base}/pulls?state=open&limit=100`);
+            const matching = openPulls.some((item) => {
+              const itemBranch = item.head?.ref ?? "";
+              const itemNumber = itemBranch.match(branchPattern)?.groups?.number
+                ?? item.title?.match(titlePattern)?.groups?.number;
+              return itemBranch === branch || itemNumber === String(number);
+            });
+            if (!matching) await request("PATCH", issuePath, { state: "closed" });
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE
