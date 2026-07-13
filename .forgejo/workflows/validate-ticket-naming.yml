@@ -1,0 +1,45 @@
+name: Validate ticket naming
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate naming convention
+        shell: bash
+        run: |
+          set -euo pipefail
+          head_ref="${FORGEJO_HEAD_REF:-}"
+          actor="${FORGEJO_ACTOR:-}"
+          repository_name="${FORGEJO_REPOSITORY##*/}"
+          pr_title="$(node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.env.FORGEJO_EVENT_PATH,"utf8"));process.stdout.write(p.pull_request?.title ?? "")')"
+          pr_created_at="$(node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.env.FORGEJO_EVENT_PATH,"utf8"));process.stdout.write(p.pull_request?.created_at ?? "")')"
+          cutoff='2026-07-02T08:10:46Z'
+          case "$actor" in
+            dependabot[bot]|github-actions[bot]|forgejo-actions[bot]|renovate[bot]) exit 0 ;;
+          esac
+          if [[ -n "$pr_created_at" && "$pr_created_at" < "$cutoff" ]]; then
+            exit 0
+          fi
+          types='(feature|enhancement|bugfix|hotfix|refactoring|maintenance|documentation|docs|security|test|research)'
+          slug='[a-z0-9]+(-[a-z0-9]+)*'
+          legacy="^${types}/([0-9]+)-${slug}$"
+          qualified="^${types}/([a-z0-9][a-z0-9._-]*)-([0-9]+)-${slug}$"
+          title='^#([0-9]+)[[:space:]]+.+$'
+          if [[ "$head_ref" =~ $legacy ]]; then
+            branch_repository="$repository_name"
+            branch_ticket="${BASH_REMATCH[2]}"
+          elif [[ "$head_ref" =~ $qualified ]]; then
+            branch_repository="${BASH_REMATCH[2]}"
+            branch_ticket="${BASH_REMATCH[3]}"
+          else
+            printf "Invalid ticket branch: %s\n" "$head_ref" >&2
+            exit 1
+          fi
+          [[ "$pr_title" =~ $title ]] || exit 1
+          title_ticket="${BASH_REMATCH[1]}"
+          [[ "$branch_ticket" == "$title_ticket" ]] || exit 1
+          echo "Naming convention valid for $branch_repository ticket #$branch_ticket."
