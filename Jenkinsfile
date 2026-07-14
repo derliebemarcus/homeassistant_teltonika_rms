@@ -89,6 +89,14 @@ ciHomeAssistantIntegration(
             npm run check:ha-minimum
             PATH="$PWD/.ci-venv/bin:$PATH" tools/compile_lockfile.sh --check
         ''',
+        actionlint: '''
+            test -n "$(find .forgejo/workflows -type f \
+              \( -name '*.yml' -o -name '*.yaml' \) -print -quit)"
+            find .forgejo/workflows -type f \
+              \( -name '*.yml' -o -name '*.yaml' \) \
+              -exec podman run --rm -v "$PWD:/repo:z" -w /repo \
+                docker.io/rhysd/actionlint:latest {} +
+        ''',
     ],
     mutation: [
         artifacts: 'build/reports/mutation/**,.mutmut-cache',
@@ -119,12 +127,11 @@ ciHomeAssistantIntegration(
             enabled: true,
             toolName: 'codeql',
             toolPath: 'codeql',
-            languages: ['python', 'actions'],
+            languages: ['python'],
         ],
         osv: [enabled: true],
         actionlint: [enabled: true],
     ],
-    sarifUploadScript: 'tools/upload_github_sarif.py',
     github: [
         credentialId: 'github token',
         publishStageChecks: true,
