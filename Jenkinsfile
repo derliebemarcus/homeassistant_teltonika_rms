@@ -61,9 +61,16 @@ ciRepositoryPipeline(
             ''',
             pipAudit: '''
                 mkdir -p build/reports/pip-audit
+                set +e
                 .ci-venv/bin/python tools/run_pip_audit.py \
                   -r requirements.txt --format json \
                   --output build/reports/pip-audit/pip-audit.json
+                audit_status=$?
+                set -e
+                if [ "$audit_status" -ne 0 ]; then
+                  cat build/reports/pip-audit/pip-audit.json
+                fi
+                exit "$audit_status"
             ''',
             trivy: 'bash tools/run_trivy.sh',
             mutation: '''
