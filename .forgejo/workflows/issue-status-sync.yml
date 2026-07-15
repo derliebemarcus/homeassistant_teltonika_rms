@@ -27,7 +27,7 @@ jobs:
           const branchPattern = /^[a-z][a-z0-9-]*\/(?:(?<repo>[a-z0-9][a-z0-9._-]*)-)?(?<number>[1-9][0-9]*)-[a-z0-9][a-z0-9-]*$/;
           const titlePattern = /^#(?<number>[1-9][0-9]*)\s+.+$/;
 
-          async function request(method, path, body) {
+          async function request(method, path, body, allowNotFound = false) {
             const response = await fetch(`${api}${path}`, {
               method,
               headers: {
@@ -38,6 +38,7 @@ jobs:
               body: body === undefined ? undefined : JSON.stringify(body),
             });
             const text = await response.text();
+            if (allowNotFound && response.status === 404) return null;
             if (!response.ok) throw new Error(`${method} ${path}: ${response.status} ${text}`);
             return text ? JSON.parse(text) : null;
           }
@@ -58,9 +59,13 @@ jobs:
             }
             const number = Number(branchNumber ?? titleNumber);
             const issuePath = `${base}/issues/${number}`;
+            const issue = await request("GET", issuePath, undefined, true);
+            if (!issue) {
+              console.log(`Skipping issue status sync: local issue #${number} does not exist.`);
+              return;
+            }
 
             if (["opened", "edited", "synchronize", "reopened"].includes(event.action)) {
-              const issue = await request("GET", issuePath);
               for (const label of issue.labels ?? []) {
                 if (label.name?.startsWith("status:")) {
                   await request("DELETE", `${issuePath}/labels/${label.id}`);
