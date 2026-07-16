@@ -72,6 +72,17 @@ ciRepositoryPipeline(
                 fi
                 exit "$audit_status"
             ''',
+            osv: '''
+                mkdir -p build/reports/osv
+                scanner_status=0
+                podman run --rm -v "$PWD:/src:z" \
+                  ghcr.io/google/osv-scanner:latest scan source \
+                  -r --no-resolve --format sarif /src \
+                  > build/reports/osv/osv-scanner.sarif || scanner_status=$?
+                test -s build/reports/osv/osv-scanner.sarif
+                python3 -c "import json,sys; report=json.load(open(sys.argv[1], encoding='utf-8')); status=int(sys.argv[2]); results=[result for run in report.get('runs', []) for result in run.get('results', [])]; print('OSV Scanner remaining findings: %d' % len(results)); [print('%s | %s | %s' % (result.get('ruleId', '<unknown>'), result.get('message', {}).get('text', ''), next((location.get('physicalLocation', {}).get('artifactLocation', {}).get('uri', '') for location in result.get('locations', [])), ''))) for result in results]; raise SystemExit(status if status not in (0, 1) else (1 if results else 0))" \
+                  build/reports/osv/osv-scanner.sarif "$scanner_status"
+            ''',
             trivy: 'bash tools/run_trivy.sh',
             mutation: '''
                 mkdir -p build/reports/mutation
