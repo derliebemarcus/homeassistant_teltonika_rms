@@ -33,7 +33,7 @@ PYSEC-2026-176
 PYSEC-2026-177
 PYSEC-2026-178
 PYSEC-2026-179
-# Home Assistant 2026.7.2 pins Pillow exactly to 12.2.0.
+# Home Assistant 2026.7.0 pins Pillow exactly to 12.2.0.
 # Remove these entries when Home Assistant permits Pillow 12.3.0 or newer.
 PYSEC-2026-2253
 PYSEC-2026-2254
