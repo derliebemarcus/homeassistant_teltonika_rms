@@ -1,9 +1,11 @@
-# Test-only transitive dependency pinned by Home Assistant 2026.7.0.
-# These advisories affect PyJWT 2.12.1, which is not declared or shipped by
-# this integration. Remove the exceptions when Home Assistant pins PyJWT 2.13.0
-# or newer. OSV Scanner treats unused exceptions as an error, so this file must
-# contain only advisories observed in the current compiled dependency set.
+# Test-only transitive dependencies pinned by Home Assistant 2026.7.0.
+# These advisories affect versions that are not declared or shipped directly by
+# this integration. Remove each exception when Home Assistant permits the fixed
+# dependency version. OSV Scanner treats unused exceptions as an error, so this
+# file must contain only advisories observed in the compiled dependency set.
 
+# Home Assistant 2026.7.0 pins PyJWT 2.12.1. Remove these exceptions when Home
+# Assistant pins PyJWT 2.13.0 or newer.
 [[IgnoredVulns]]
 id = "GHSA-993g-76c3-p5m4"
 reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
@@ -23,3 +25,17 @@ reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.
 [[IgnoredVulns]]
 id = "CVE-2026-48526"
 reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+
+# Home Assistant 2026.7.0 pins Pillow 12.2.0. Remove these exceptions when Home
+# Assistant permits Pillow 12.3.0 or newer.
+[[IgnoredVulns]]
+id = "PYSEC-2026-3451"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-3452"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-3453"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
