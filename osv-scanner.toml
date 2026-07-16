@@ -1,117 +1,25 @@
-[[IgnoredVulns]]
-id = "GHSA-mr82-8j83-vxmv"
-reason = "Dependency of Home Assistant, currently accepted risk."
-
-[[IgnoredVulns]]
-id = "GHSA-m959-cc7f-wv43"
-reason = "Dependency of Home Assistant, currently accepted risk."
-
-[[IgnoredVulns]]
-id = "GHSA-752w-5fwx-jx9f"
-reason = "Dependency of Home Assistant, currently accepted risk."
-
-[[IgnoredVulns]]
-id = "GHSA-p423-j2cm-9vmq"
-reason = "Dependency of Home Assistant, currently accepted risk."
-
-[[IgnoredVulns]]
-id = "CVE-2026-32597"
-reason = "Dependency of Home Assistant, currently accepted risk until upstream fixes it."
-
-[[IgnoredVulns]]
-id = "GHSA-pjjw-68hj-v9mw"
-reason = "Dependency of Home Assistant (uv), currently accepted risk until upstream fixes it."
-
-[[IgnoredVulns]]
-id = "GHSA-6w46-j5rx-g56g"
-reason = "Strategic decision: pytest 9.x collides with HA core dependencies. Staying on 8.x for stability."
-
-[[IgnoredVulns]]
-id = "GHSA-cx63-2mw6-8hw5"
-reason = "Environmental noise: setuptools 9.1.0 reported in CI but not used in project."
-
-[[IgnoredVulns]]
-id = "GHSA-qwmp-2cf2-g9g6"
-reason = "Environmental noise: setuptools 9.1.0 reported in CI but not used in project."
-
-[[IgnoredVulns]]
-id = "PYSEC-2022-43017"
-reason = "Environmental noise: wheel 0.9.7 reported in CI but not used in project."
-
-# Test-only transitive dependencies pinned exactly by Home Assistant 2026.6.4.
-# They are not declared or shipped by this integration. Remove each exception
-# when Home Assistant adopts the noted fixed package version.
-[[IgnoredVulns]]
-id = "GHSA-2fqr-mr3j-6wp8"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-[[IgnoredVulns]]
-id = "GHSA-4fvr-rgm6-gqmc"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-[[IgnoredVulns]]
-id = "GHSA-4m7w-qmgq-4wj5"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-[[IgnoredVulns]]
-id = "GHSA-63hw-fmq6-xxg2"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-[[IgnoredVulns]]
-id = "GHSA-9x8q-7h8h-wcw9"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-[[IgnoredVulns]]
-id = "GHSA-g3cq-j2xw-wf74"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-[[IgnoredVulns]]
-id = "GHSA-hg6j-4rv6-33pg"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-[[IgnoredVulns]]
-id = "GHSA-hpj7-wq8m-9hgp"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-[[IgnoredVulns]]
-id = "GHSA-jg22-mg44-37j8"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-[[IgnoredVulns]]
-id = "GHSA-m6qw-4cw2-hm4m"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-[[IgnoredVulns]]
-id = "GHSA-xcgm-r5h9-7989"
-reason = "Home Assistant test dependency pins aiohttp 3.13.5; remove when HA pins aiohttp >=3.14.1."
-
-[[IgnoredVulns]]
-id = "GHSA-537c-gmf6-5ccf"
-reason = "Home Assistant test dependency pins cryptography 48.0.0; remove when HA pins >=48.0.1."
+# Test-only transitive dependency pinned by Home Assistant 2026.7.0.
+# These advisories affect PyJWT 2.12.1, which is not declared or shipped by
+# this integration. Remove the exceptions when Home Assistant pins PyJWT 2.13.0
+# or newer. OSV Scanner treats unused exceptions as an error, so this file must
+# contain only advisories observed in the current compiled dependency set.
 
 [[IgnoredVulns]]
 id = "GHSA-993g-76c3-p5m4"
-reason = "Home Assistant test dependency pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+
 [[IgnoredVulns]]
 id = "GHSA-fhv5-28vv-h8m8"
-reason = "Home Assistant test dependency pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+
 [[IgnoredVulns]]
 id = "GHSA-jq35-7prp-9v3f"
-reason = "Home Assistant test dependency pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+
 [[IgnoredVulns]]
 id = "GHSA-w7vc-732c-9m39"
-reason = "Home Assistant test dependency pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
-[[IgnoredVulns]]
-id = "GHSA-xgmm-8j9v-c9wx"
-reason = "Home Assistant test dependency pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+
 [[IgnoredVulns]]
 id = "CVE-2026-48526"
 reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
-
-# OSV recursive resolution noise; the compiled requirements.txt contains safe
-# versions (filelock 3.29.4, idna 3.18) and contains no setuptools package.
-[[IgnoredVulns]]
-id = "GHSA-5rjg-fvgr-3xxf"
-reason = "Resolver artifact: setuptools 9.1.0 is not present in requirements.txt."
-[[IgnoredVulns]]
-id = "GHSA-r9hx-vwmv-q579"
-reason = "Resolver artifact: setuptools 9.1.0 is not present in requirements.txt."
-[[IgnoredVulns]]
-id = "GHSA-qmgc-5h2g-mvrw"
-reason = "Resolver artifact: requirements.txt uses filelock 3.29.4, newer than the fix."
-[[IgnoredVulns]]
-id = "GHSA-w853-jp5j-5j7f"
-reason = "Resolver artifact: requirements.txt uses filelock 3.29.4, newer than the fix."
-[[IgnoredVulns]]
-id = "GHSA-65pc-fj4g-8rjx"
-reason = "Resolver artifact: requirements.txt uses idna 3.18, newer than the fix."
