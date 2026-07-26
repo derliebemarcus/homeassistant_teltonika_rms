@@ -39,3 +39,43 @@ reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=1
 [[IgnoredVulns]]
 id = "PYSEC-2026-3453"
 reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "CVE-2026-54058"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "CVE-2026-54059"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "CVE-2026-54060"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "CVE-2026-55379"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "CVE-2026-55380"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "CVE-2026-55798"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "CVE-2026-59197"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "CVE-2026-59198"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "CVE-2026-59200"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+
+[[IgnoredVulns]]
+id = "CVE-2026-59204"
+reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
