@@ -9,6 +9,7 @@ import sys
 
 CATEGORY_RE = re.compile(r"^(add|change|deprecate|remove|fix|build|chore|ci|docs)(\(.*\))?: [^ ].*")
 BYPASS_PREFIX_RE = re.compile(r"^(Update|Bump|Merge|Revert)\b")
+TICKET_PREFIX_RE = re.compile(r"^#\d+\s+\S.*")
 DEPENDABOT_NAME = "dependabot[bot]"
 
 
@@ -17,22 +18,22 @@ def _git(*args: str) -> str:
 
 
 def _meaningful_lines(message: str) -> list[str]:
-    return [line for line in message.splitlines() if line and not line.startswith("#")]
+    return [line for line in message.splitlines() if line.strip()]
 
 
 def validate_message(message: str) -> str | None:
-    lines = [line for line in message.splitlines() if not line.startswith("#")]
+    lines = message.splitlines()
     meaningful = _meaningful_lines(message)
     if not meaningful:
         return "commit message must not be empty"
-    if BYPASS_PREFIX_RE.match(meaningful[0]):
+    if BYPASS_PREFIX_RE.match(meaningful[0]) or TICKET_PREFIX_RE.match(meaningful[0]):
         return None
 
     if len(meaningful) == 1:
         if not CATEGORY_RE.match(meaningful[0]):
             return (
                 "single-line commits must start with a category "
-                "(e.g. add:, change:, fix:, ci:, docs:)"
+                "(e.g. add:, change:, fix:, ci:, docs:) or a ticket number"
             )
         return None
 
