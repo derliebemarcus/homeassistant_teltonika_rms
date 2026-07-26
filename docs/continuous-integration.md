@@ -20,12 +20,19 @@ The dependency-consistency gate compiles the lockfile with the configured packag
 deliberately omits environment-specific index and trusted-host directives from the committed
 `requirements.txt`.
 
-The profile retains Pytest and coverage, Ruff lint and format, Mypy, translation validation,
-Pip Audit, mutation testing, Hassfest, SonarQube, Coveralls, Gitleaks, Trivy, CodeQL, OSV,
-Actionlint, repository rules, and dependency consistency. CodeQL scans Python; Forgejo
-workflow files are validated separately with Actionlint in Forgejo compatibility mode.
-Mutation testing runs for pull requests and `main`; `main` retains the weekly `H H * * 6`
-run.
+The Jenkins profile retains Pytest and the blocking 97.1% coverage floor, Ruff lint and
+format, Mypy, translation validation, Pip Audit, mutation testing, Hassfest, SonarQube,
+Gitleaks, Trivy, CodeQL, OSV, Actionlint, repository rules, and dependency consistency.
+CodeQL scans Python; Forgejo workflow files are validated separately with Actionlint in
+Forgejo compatibility mode. Mutation testing runs for pull requests and `main`; `main`
+retains the weekly `H H * * 6` run.
+
+Coveralls is not part of the Jenkins lifecycle. After Forgejo merges a validated commit and
+the repository is mirrored to GitHub, `.github/workflows/coveralls.yml` reproduces the
+Cobertura report and publishes it to Coveralls. This workflow runs only on GitHub pushes to
+`main` or manual dispatch, is not a required check, and treats upload failures as
+non-blocking. Jenkins does not require a Coveralls credential; its coverage floor and the
+SonarQube Quality Gate remain authoritative.
 
 Forgejo is the authoritative SCM, commit-status, and release provider. GitHub-specific
 repository metadata and status credentials are not part of the Jenkins lifecycle.
