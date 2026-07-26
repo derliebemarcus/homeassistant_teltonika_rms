@@ -13,6 +13,7 @@ from tools.check_commit_messages import (
 
 def test_validate_message_accepts_repository_formats() -> None:
     assert validate_message("fix: tighten release workflow shell comparison") is None
+    assert validate_message("#100 Document GitHub-native Coveralls publication") is None
     assert validate_message("Bump python-socketio from 5.11.2 to 5.16.1") is None
     assert validate_message("Update pytest-cov requirement from <7,>=6 to >=6,<8") is None
     assert validate_message("Merge branch 'main' into codex/qa") is None
@@ -34,6 +35,7 @@ def test_validate_message_accepts_repository_formats() -> None:
 
 
 def test_validate_message_rejects_invalid_formats() -> None:
+    assert validate_message("# ticket without numeric identifier") is not None
     assert validate_message("bump python-socketio from 5.11.2 to 5.16.1") is not None
     assert validate_message("update pytest-cov requirement from <7,>=6 to >=6,<8") is not None
     assert validate_message("merge branch 'main' into codex/qa") is not None
