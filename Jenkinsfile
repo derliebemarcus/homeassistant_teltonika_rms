@@ -120,12 +120,6 @@ ciRepositoryPipeline(
             projectName: 'teltonika_rms',
             timeoutMinutes: 15,
         ],
-        coveralls: [
-            enabled: true,
-            file: 'build/reports/pytest/coverage.xml',
-            credentialId: 'Coveralls',
-            runtime: 'host',
-        ],
         repositoryChecks: [
             commitMessageScript: 'tools/check_commit_messages.py',
             releaseNoteScript: 'tools/check_release_notes.py',
