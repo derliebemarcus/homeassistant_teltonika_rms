@@ -17,7 +17,7 @@
   ],
   "quality_scale": "platinum",
   "requirements": [
-    "python-socketio==5.16.3"
+    "python-socketio==5.16.4"
   ],
   "version": "0.10.1"
 }
