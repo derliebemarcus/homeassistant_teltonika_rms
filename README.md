@@ -76,6 +76,8 @@ See our [ROADMAP.md](ROADMAP.md) for planned features and future improvements.
 
 ### Option 1: Install with HACS
 
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=derliebemarcus&repository=homeassistant_teltonika_rms&category=integration)
+
 1. Open HACS in Home Assistant.
 2. Go to Integrations.
 3. Add this repository as a Custom Repository (type: `Integration`).
