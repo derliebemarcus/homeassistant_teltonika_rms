@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Protocol
 
 from aiohttp import ClientError, ClientResponse, ClientSession
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.exceptions import ConfigEntryAuthFailed, OAuth2TokenRequestError
 from homeassistant.helpers import config_entry_oauth2_flow
 from pydantic import ValidationError
 
@@ -426,6 +426,8 @@ class RmsApiClient:
                 )
             except _RetryRequest:
                 continue
+            except OAuth2TokenRequestError:
+                raise
             except ClientError as err:
                 if attempt >= _MAX_RETRIES:
                     raise RmsApiError(f"RMS network error: {err}") from err
