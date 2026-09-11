@@ -28,7 +28,7 @@ compile_in() {
   local workdir="$1"
 
   if [ "$(uname -s)" = "Linux" ] && command -v pip-compile >/dev/null 2>&1; then
-    (cd "$workdir" && pip-compile "${compile_args[@]}")
+    (cd "$workdir" && unset PIP_NO_INDEX && pip-compile "${compile_args[@]}")
     return
   fi
 
