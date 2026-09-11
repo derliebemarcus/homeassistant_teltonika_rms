@@ -1,8 +1,34 @@
 documentation:
   standard: repository-documentation
-  standard_version: 1
+  standard_version: 2
+  ruleset_version: 2.0.0
   profile: library
   architecture: arc42-lite
   diagrams: c4
   decisions: madr
   publishing: none
+  maintenance:
+    require_impact_declaration: true
+    mappings:
+      - source:
+          - "custom_components/**"
+        documentation:
+          - "docs/reference/interfaces.md"
+          - "docs/reference/compatibility.md"
+          - "docs/architecture/building-blocks.md"
+      - source:
+          - "custom_components/teltonika_rms/manifest.json"
+          - "hacs.json"
+          - "requirements*.txt"
+          - "requirements-dev.in"
+        documentation:
+          - "docs/reference/compatibility.md"
+          - "docs/how-to/upgrade.md"
+      - source:
+          - "Jenkinsfile"
+          - "tools/**"
+          - ".forgejo/workflows/**"
+          - ".github/workflows/**"
+        documentation:
+          - "docs/continuous-integration.md"
+          - "docs/how-to/testing.md"
