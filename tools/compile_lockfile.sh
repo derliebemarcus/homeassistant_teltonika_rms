@@ -51,7 +51,7 @@ compile_in() {
     -v "$ROOT:/work" \
     -w "/work${relative_workdir:+/$relative_workdir}" \
     python:3.14-slim \
-    sh -c 'python -m pip install --user pip-tools==7.5.3 >/dev/null && /tmp/.local/bin/pip-compile "$@"' \
+    sh -c 'python -m pip install --user pip-tools==7.6.1 >/dev/null && /tmp/.local/bin/pip-compile "$@"' \
     sh "${compile_args[@]}"
 }
 
