@@ -11,7 +11,12 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
+    ConfigEntryNotReady,
+    OAuth2TokenRequestError,
+    OAuth2TokenRequestReauthError,
+)
 from homeassistant.helpers import aiohttp_client, config_entry_oauth2_flow
 from homeassistant.helpers.typing import ConfigType
 
@@ -77,8 +82,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             implementation = await config_entry_oauth2_flow.async_get_config_entry_implementation(
                 hass, entry
             )
+        except (ConfigEntryAuthFailed, ConfigEntryNotReady):
+            raise
         except config_entry_oauth2_flow.ImplementationUnavailableError as err:
-            raise ConfigEntryNotReady(f"OAuth implementation unavailable: {err}") from err
+            raise ConfigEntryNotReady("OAuth implementation unavailable") from err
+        except ValueError as err:
+            raise ConfigEntryAuthFailed("OAuth implementation unavailable") from err
         oauth_session = config_entry_oauth2_flow.OAuth2Session(hass, entry, implementation)
         auth_client = api_mod.OAuth2RmsAuthClient(oauth_session)
 
@@ -99,8 +108,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await api.async_validate_connection()
         await bundle.inventory.async_config_entry_first_refresh()
         await bundle.state.async_config_entry_first_refresh()
-    except ConfigEntryAuthFailed:
+    except (ConfigEntryAuthFailed, ConfigEntryNotReady):
         raise
+    except OAuth2TokenRequestReauthError as err:
+        raise ConfigEntryAuthFailed("OAuth token refresh requires reauthentication") from err
+    except OAuth2TokenRequestError as err:
+        raise ConfigEntryNotReady("OAuth token refresh failed") from err
     except RmsApiError as err:
         raise ConfigEntryNotReady(f"Failed to connect to Teltonika RMS: {err}") from err
     except Exception as err:
