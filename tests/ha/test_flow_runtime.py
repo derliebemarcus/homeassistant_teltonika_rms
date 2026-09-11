@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import importlib
 import json
@@ -87,8 +88,10 @@ class FakeHass:
     async def async_add_executor_job(self, func: Any, *args: Any) -> Any:
         return func(*args)
 
-    def async_create_task(self, coro: Any) -> Any:
-        self.created_tasks.append(coro)
+    def async_create_task(self, coro: Any) -> asyncio.Task[Any]:
+        task = asyncio.get_running_loop().create_task(coro)
+        self.created_tasks.append(task)
+        return task
 
 
 @pytest.mark.asyncio
