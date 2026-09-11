@@ -66,7 +66,7 @@ def _token_error(error_type: type[Exception], status: int) -> Exception:
     )
 
 
-async def _setup_with_validation_error(
+def _prepare_setup_with_validation_error(
     monkeypatch: pytest.MonkeyPatch,
     error: Exception,
 ) -> tuple[Any, Any]:
@@ -96,10 +96,18 @@ async def _setup_with_validation_error(
         "RmsStatusChannelManager",
         MagicMock(return_value=MagicMock()),
     )
-    monkeypatch.setattr(integration, "_initialize_bundle", MagicMock(return_value=MagicMock()))
+    monkeypatch.setattr(
+        integration,
+        "_initialize_bundle",
+        MagicMock(return_value=MagicMock()),
+    )
 
-    await integration.async_setup_entry(hass, entry)
     return hass, entry
+
+
+def _assert_failed_setup_has_no_listener_or_reload(hass: Any, entry: Any) -> None:
+    entry.add_update_listener.assert_not_called()
+    hass.config_entries.async_reload.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -127,8 +135,7 @@ async def test_native_implementation_unavailable_is_not_wrapped(
         await integration.async_setup_entry(hass, entry)
 
     assert raised.value is error
-    entry.add_update_listener.assert_not_called()
-    hass.config_entries.async_reload.assert_not_called()
+    _assert_failed_setup_has_no_listener_or_reload(hass, entry)
 
 
 @pytest.mark.asyncio
@@ -136,7 +143,9 @@ async def test_legacy_implementation_unavailable_becomes_not_ready(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Retain pre-2026.10 setup-retry semantics without increasing the HA minimum."""
-    error = config_entry_oauth2_flow.ImplementationUnavailableError("implementation unavailable")
+    error = config_entry_oauth2_flow.ImplementationUnavailableError(
+        "implementation unavailable"
+    )
     hass = _hass()
     entry = _entry()
     monkeypatch.setattr(
@@ -149,15 +158,14 @@ async def test_legacy_implementation_unavailable_becomes_not_ready(
         await integration.async_setup_entry(hass, entry)
 
     assert raised.value.__cause__ is error
-    entry.add_update_listener.assert_not_called()
-    hass.config_entries.async_reload.assert_not_called()
+    _assert_failed_setup_has_no_listener_or_reload(hass, entry)
 
 
 @pytest.mark.asyncio
 async def test_native_unknown_implementation_is_not_wrapped(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Keep the HA 2026.10 auth-failed exception ahead of its ValueError compatibility base."""
+    """Keep HA 2026.10 auth-failed semantics ahead of ValueError compatibility."""
 
     class NativeUnknownImplementation(ConfigEntryAuthFailed, ValueError):
         pass
@@ -175,8 +183,7 @@ async def test_native_unknown_implementation_is_not_wrapped(
         await integration.async_setup_entry(hass, entry)
 
     assert raised.value is error
-    entry.add_update_listener.assert_not_called()
-    hass.config_entries.async_reload.assert_not_called()
+    _assert_failed_setup_has_no_listener_or_reload(hass, entry)
 
 
 @pytest.mark.asyncio
@@ -197,8 +204,7 @@ async def test_legacy_unknown_implementation_becomes_auth_failed(
         await integration.async_setup_entry(hass, entry)
 
     assert raised.value.__cause__ is error
-    entry.add_update_listener.assert_not_called()
-    hass.config_entries.async_reload.assert_not_called()
+    _assert_failed_setup_has_no_listener_or_reload(hass, entry)
 
 
 @pytest.mark.asyncio
@@ -214,11 +220,13 @@ async def test_native_transient_token_refresh_error_is_not_wrapped(
         pass
 
     error = _token_error(NativeTransientTokenError, 503)
+    hass, entry = _prepare_setup_with_validation_error(monkeypatch, error)
 
     with pytest.raises(ConfigEntryNotReady) as raised:
-        await _setup_with_validation_error(monkeypatch, error)
+        await integration.async_setup_entry(hass, entry)
 
     assert raised.value is error
+    _assert_failed_setup_has_no_listener_or_reload(hass, entry)
 
 
 @pytest.mark.asyncio
@@ -234,11 +242,13 @@ async def test_native_token_refresh_reauth_error_is_not_wrapped(
         pass
 
     error = _token_error(NativeReauthTokenError, 400)
+    hass, entry = _prepare_setup_with_validation_error(monkeypatch, error)
 
     with pytest.raises(ConfigEntryAuthFailed) as raised:
-        await _setup_with_validation_error(monkeypatch, error)
+        await integration.async_setup_entry(hass, entry)
 
     assert raised.value is error
+    _assert_failed_setup_has_no_listener_or_reload(hass, entry)
 
 
 @pytest.mark.asyncio
@@ -247,11 +257,28 @@ async def test_legacy_token_refresh_reauth_error_becomes_auth_failed(
 ) -> None:
     """Preserve reauth semantics for Home Assistant versions before 2026.10."""
     error = _token_error(OAuth2TokenRequestReauthError, 400)
+    hass, entry = _prepare_setup_with_validation_error(monkeypatch, error)
 
     with pytest.raises(ConfigEntryAuthFailed) as raised:
-        await _setup_with_validation_error(monkeypatch, error)
+        await integration.async_setup_entry(hass, entry)
 
     assert raised.value.__cause__ is error
+    _assert_failed_setup_has_no_listener_or_reload(hass, entry)
+
+
+@pytest.mark.asyncio
+async def test_legacy_token_refresh_error_becomes_not_ready(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Map generic pre-2026.10 OAuth token failures onto setup retry semantics."""
+    error = _token_error(OAuth2TokenRequestError, 503)
+    hass, entry = _prepare_setup_with_validation_error(monkeypatch, error)
+
+    with pytest.raises(ConfigEntryNotReady) as raised:
+        await integration.async_setup_entry(hass, entry)
+
+    assert raised.value.__cause__ is error
+    _assert_failed_setup_has_no_listener_or_reload(hass, entry)
 
 
 @pytest.mark.asyncio
