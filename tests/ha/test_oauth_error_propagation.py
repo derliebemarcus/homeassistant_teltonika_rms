@@ -10,6 +10,7 @@ import pytest
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
     ConfigEntryNotReady,
+    OAuth2TokenRequestError,
     OAuth2TokenRequestReauthError,
     OAuth2TokenRequestTransientError,
 )
@@ -131,6 +132,54 @@ async def test_native_implementation_unavailable_is_not_wrapped(
 
 
 @pytest.mark.asyncio
+async def test_legacy_implementation_unavailable_becomes_not_ready(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Retain pre-2026.10 setup-retry semantics without increasing the HA minimum."""
+    error = config_entry_oauth2_flow.ImplementationUnavailableError("implementation unavailable")
+    hass = _hass()
+    entry = _entry()
+    monkeypatch.setattr(
+        integration.config_entry_oauth2_flow,
+        "async_get_config_entry_implementation",
+        AsyncMock(side_effect=error),
+    )
+
+    with pytest.raises(ConfigEntryNotReady) as raised:
+        await integration.async_setup_entry(hass, entry)
+
+    assert raised.value.__cause__ is error
+    entry.add_update_listener.assert_not_called()
+    hass.config_entries.async_reload.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_native_unknown_implementation_is_not_wrapped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep the HA 2026.10 auth-failed exception ahead of its ValueError compatibility base."""
+
+    class NativeUnknownImplementation(ConfigEntryAuthFailed, ValueError):
+        pass
+
+    error = NativeUnknownImplementation("implementation not available")
+    hass = _hass()
+    entry = _entry()
+    monkeypatch.setattr(
+        integration.config_entry_oauth2_flow,
+        "async_get_config_entry_implementation",
+        AsyncMock(side_effect=error),
+    )
+
+    with pytest.raises(ConfigEntryAuthFailed) as raised:
+        await integration.async_setup_entry(hass, entry)
+
+    assert raised.value is error
+    entry.add_update_listener.assert_not_called()
+    hass.config_entries.async_reload.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_legacy_unknown_implementation_becomes_auth_failed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -173,6 +222,26 @@ async def test_native_transient_token_refresh_error_is_not_wrapped(
 
 
 @pytest.mark.asyncio
+async def test_native_token_refresh_reauth_error_is_not_wrapped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep the HA 2026.10 token-refresh authentication failure intact."""
+
+    class NativeReauthTokenError(
+        OAuth2TokenRequestReauthError,
+        ConfigEntryAuthFailed,
+    ):
+        pass
+
+    error = _token_error(NativeReauthTokenError, 400)
+
+    with pytest.raises(ConfigEntryAuthFailed) as raised:
+        await _setup_with_validation_error(monkeypatch, error)
+
+    assert raised.value is error
+
+
+@pytest.mark.asyncio
 async def test_legacy_token_refresh_reauth_error_becomes_auth_failed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -183,3 +252,39 @@ async def test_legacy_token_refresh_reauth_error_becomes_auth_failed(
         await _setup_with_validation_error(monkeypatch, error)
 
     assert raised.value.__cause__ is error
+
+
+@pytest.mark.asyncio
+async def test_oauth_session_token_validation_error_propagates_unchanged() -> None:
+    """Do not intercept an error raised directly by OAuth2Session token validation."""
+    error = _token_error(OAuth2TokenRequestTransientError, 503)
+    oauth_session = MagicMock()
+    oauth_session.async_ensure_token_valid = AsyncMock(side_effect=error)
+    oauth_session.token = {"access_token": "test-token"}
+    auth_client = integration.api_mod.OAuth2RmsAuthClient(oauth_session)
+
+    with pytest.raises(OAuth2TokenRequestTransientError) as raised:
+        await auth_client.async_get_access_token()
+
+    assert raised.value is error
+    oauth_session.async_ensure_token_valid.assert_awaited_once_with()
+
+
+@pytest.mark.asyncio
+async def test_rms_transport_does_not_retry_or_wrap_oauth_token_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep OAuth token failures out of the generic RMS ClientError retry wrapper."""
+    error = _token_error(OAuth2TokenRequestError, 503)
+    auth_client = MagicMock()
+    auth_client.async_request = AsyncMock(side_effect=error)
+    api = integration.api_mod.RmsApiClient(auth=auth_client, endpoint_matrix=MagicMock())
+    sleep = AsyncMock()
+    monkeypatch.setattr(integration.api_mod.asyncio, "sleep", sleep)
+
+    with pytest.raises(OAuth2TokenRequestError) as raised:
+        await api.async_request("GET", "/devices")
+
+    assert raised.value is error
+    auth_client.async_request.assert_awaited_once()
+    sleep.assert_not_awaited()
