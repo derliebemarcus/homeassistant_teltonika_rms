@@ -1,81 +1,15 @@
-# Test-only transitive dependencies pinned by Home Assistant 2026.7.0.
-# These advisories affect versions that are not declared or shipped directly by
-# this integration. Remove each exception when Home Assistant permits the fixed
-# dependency version. OSV Scanner treats unused exceptions as an error, so this
-# file must contain only advisories observed in the compiled dependency set.
-
-# Home Assistant 2026.7.0 pins PyJWT 2.12.1. Remove these exceptions when Home
-# Assistant pins PyJWT 2.13.0 or newer.
+# Test/dev-only transitive dependency pinned by Home Assistant 2026.9.0.
+# The integration does not declare or ship cryptography. Remove these exceptions
+# when Home Assistant permits the corresponding fixed version. Tracked by
+# siczb/maintenance#885.
 [[IgnoredVulns]]
-id = "GHSA-993g-76c3-p5m4"
-reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+id = "PYSEC-2026-3552"
+reason = "HA 2026.9.0 pins cryptography 48.0.1; remove when HA permits >=50.0.0 (#885)."
 
 [[IgnoredVulns]]
-id = "GHSA-fhv5-28vv-h8m8"
-reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
+id = "PYSEC-2026-3553"
+reason = "HA 2026.9.0 pins cryptography 48.0.1; remove when HA permits >=49.0.0 (#885)."
 
 [[IgnoredVulns]]
-id = "GHSA-jq35-7prp-9v3f"
-reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
-
-[[IgnoredVulns]]
-id = "GHSA-w7vc-732c-9m39"
-reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-48526"
-reason = "Home Assistant 2026.7.0 pins PyJWT 2.12.1; remove when HA pins >=2.13.0."
-
-# Home Assistant 2026.7.0 pins Pillow 12.2.0. Remove these exceptions when Home
-# Assistant permits Pillow 12.3.0 or newer.
-[[IgnoredVulns]]
-id = "PYSEC-2026-3451"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "PYSEC-2026-3452"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "PYSEC-2026-3453"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-54058"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-54059"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-54060"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-55379"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-55380"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-55798"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-59197"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-59198"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-59200"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
-
-[[IgnoredVulns]]
-id = "CVE-2026-59204"
-reason = "Home Assistant 2026.7.0 pins Pillow 12.2.0; remove when HA permits >=12.3.0."
+id = "PYSEC-2026-3554"
+reason = "HA 2026.9.0 pins cryptography 48.0.1; remove when HA permits >=49.0.0 (#885)."
