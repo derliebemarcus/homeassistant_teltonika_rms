@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Generator
 from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -34,6 +35,10 @@ def hass(mock_coordinator_bundle: CoordinatorBundle) -> Generator[HomeAssistant]
             listener = _listeners.pop(event_type)
             listener(MagicMock(data=event_data))
 
+    def async_create_task(coro: Any) -> asyncio.Task[Any]:
+        """Schedule a coroutine like Home Assistant instead of retaining it in a mock."""
+        return asyncio.get_running_loop().create_task(coro)
+
     mock_config_entry = AsyncMock(spec=ConfigEntry)
     mock_config_entry.domain = DOMAIN
     mock_config_entry.runtime_data = TeltonikaRmsRuntime(bundle=mock_coordinator_bundle)
@@ -56,7 +61,7 @@ def hass(mock_coordinator_bundle: CoordinatorBundle) -> Generator[HomeAssistant]
     _hass.bus = MagicMock()
     _hass.bus.async_fire = MagicMock(side_effect=async_fire)
     _hass.bus.async_listen_once = MagicMock(side_effect=async_listen_once)
-    _hass.async_create_task = MagicMock()
+    _hass.async_create_task = MagicMock(side_effect=async_create_task)
     _hass.services = MagicMock()
     _hass.services.has_service.return_value = False
     _hass.services.async_register = MagicMock()
