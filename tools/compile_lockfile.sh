@@ -27,8 +27,8 @@ fi
 compile_in() {
   local workdir="$1"
 
-  if [ "$(uname -s)" = "Linux" ] && python -m piptools --help >/dev/null 2>&1; then
-    (cd "$workdir" && python -m piptools compile "${compile_args[@]}")
+  if [ "$(uname -s)" = "Linux" ] && command -v pip-compile >/dev/null 2>&1; then
+    (cd "$workdir" && pip-compile "${compile_args[@]}")
     return
   fi
 
