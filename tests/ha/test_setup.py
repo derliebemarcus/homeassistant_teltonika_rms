@@ -47,10 +47,9 @@ async def test_async_setup_entry_api_failure(hass: HomeAssistant) -> None:
     mock_entry.data = {CONF_AUTH_MODE: AUTH_MODE_PAT, CONF_PAT_TOKEN: "token"}
     mock_entry.options = {}
 
-    # Patch the RmsApiClient class itself to control its instance methods
     with (
         patch("custom_components.teltonika_rms.api.PatRmsAuthClient"),
-        patch("custom_components.teltonika_rms.api.RmsApiClient") as mock_api_class,
+        patch("custom_components.teltonika_rms.SpecCompatibleRmsApiClient") as mock_api_class,
         patch("custom_components.teltonika_rms.endpoint_matrix.load_endpoint_matrix"),
         patch("homeassistant.helpers.aiohttp_client.async_get_clientsession"),
     ):
@@ -59,6 +58,8 @@ async def test_async_setup_entry_api_failure(hass: HomeAssistant) -> None:
 
         with pytest.raises(ConfigEntryNotReady, match="Unexpected error during initialization"):
             await async_setup_entry(hass, mock_entry)
+
+        mock_api.async_validate_connection.assert_awaited_once_with()
 
 
 @pytest.mark.asyncio
