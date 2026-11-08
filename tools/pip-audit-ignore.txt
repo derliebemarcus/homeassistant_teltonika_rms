@@ -32,8 +32,3 @@ PYSEC-2026-176
 PYSEC-2026-177
 PYSEC-2026-178
 PYSEC-2026-179
-# Home Assistant 2026.9.0 pins cryptography 48.0.1 in the test/dev dependency graph.
-# The integration does not declare or ship cryptography. Tracked by #885.
-PYSEC-2026-3552
-PYSEC-2026-3553
-PYSEC-2026-3554
