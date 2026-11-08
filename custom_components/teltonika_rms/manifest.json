@@ -19,5 +19,8 @@
   "requirements": [
     "python-socketio==5.16.3"
   ],
-  "version": "0.10.1"
+  "version": "0.10.1",
+  "categories": [
+    "computers_network.routers_network"
+  ]
 }
