@@ -1,15 +1,2 @@
-# Test/dev-only transitive dependency pinned by Home Assistant 2026.9.0.
-# The integration does not declare or ship cryptography. Remove these exceptions
-# when Home Assistant permits the corresponding fixed version. Tracked by
-# siczb/maintenance#885.
-[[IgnoredVulns]]
-id = "PYSEC-2026-3552"
-reason = "HA 2026.9.0 pins cryptography 48.0.1; remove when HA permits >=50.0.0 (#885)."
-
-[[IgnoredVulns]]
-id = "PYSEC-2026-3553"
-reason = "HA 2026.9.0 pins cryptography 48.0.1; remove when HA permits >=49.0.0 (#885)."
-
-[[IgnoredVulns]]
-id = "PYSEC-2026-3554"
-reason = "HA 2026.9.0 pins cryptography 48.0.1; remove when HA permits >=49.0.0 (#885)."
+# No active OSV waivers: HA 2026.11.0 resolves cryptography to 50.0.2.
+# Future exceptions require advisory ID, upstream pin, and explicit removal trigger.
