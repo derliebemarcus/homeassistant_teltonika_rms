@@ -14,7 +14,7 @@ aiogithubapi==26.0.0
     # via homeassistant
 aiohappyeyeballs==2.7.1
     # via aiohttp
-aiohttp==3.14.3
+aiohttp==3.14.5
     # via
     #   aiogithubapi
     #   aiohttp-asyncmdnsresolver
@@ -29,7 +29,7 @@ aiohttp-cors==0.8.1
     # via homeassistant
 aiohttp-fast-zlib==0.3.0
     # via homeassistant
-aiooui==0.1.9
+aiooui==0.1.11
     # via bluetooth-adapters
 aiosignal==1.4.0
     # via aiohttp
@@ -39,9 +39,9 @@ annotated-types==0.8.0
     # via pydantic
 annotatedyaml==1.0.2
     # via homeassistant
-anyio==4.15.1
-    # via httpx
-ast-serialize==0.11.1
+anyio==4.16.0
+    # via httpx2
+ast-serialize==0.13.1
     # via mypy
 astral==2.2
     # via homeassistant
@@ -70,12 +70,12 @@ bcrypt==5.0.0
     # via homeassistant
 bidict==0.24.1
     # via python-socketio
-bleak==3.0.2
+bleak==3.1.0
     # via
     #   bleak-retry-connector
     #   bluetooth-adapters
     #   habluetooth
-bleak-retry-connector==4.7.0
+bleak-retry-connector==4.7.1
     # via habluetooth
 bluetooth-adapters==2.4.0
     # via
@@ -92,7 +92,7 @@ boto3==1.43.36
     # via
     #   -r requirements-dev.in
     #   pycognito
-botocore==1.43.92
+botocore==1.43.126
     # via
     #   boto3
     #   s3transfer
@@ -108,34 +108,32 @@ cachecontrol[filecache]==0.14.4
     # via
     #   cachecontrol
     #   pip-audit
-certifi==2026.7.22
+certifi==2026.10.23
     # via
     #   homeassistant
-    #   httpcore
-    #   httpx
     #   requests
 cffi==2.1.1
     # via
     #   cryptography
     #   pycares
     #   pynacl
-charset-normalizer==3.5.1
+charset-normalizer==3.5.2
     # via requests
 ciso8601==2.3.3
     # via
     #   hass-nabucasa
     #   homeassistant
-click==8.5.0
+click==8.5.1
     # via
     #   mutmut
     #   pip-tools
-coverage[toml]==7.16.0
+coverage[toml]==7.17.2
     # via
     #   mutmut
     #   pytest-cov
 cronsim==2.7
     # via homeassistant
-cryptography==48.0.1
+cryptography==50.0.2
     # via
     #   acme
     #   bluetooth-data-tools
@@ -148,7 +146,7 @@ cryptography==48.0.1
     #   snitun
 cyclonedx-python-lib==11.12.0
     # via pip-audit
-dbus-fast==5.0.22
+dbus-fast==5.2.0
     # via
     #   bleak
     #   bleak-retry-connector
@@ -158,7 +156,7 @@ defusedxml==0.7.1
     # via py-serializable
 envs==1.4
     # via pycognito
-filelock==3.32.6
+filelock==4.2.9
     # via cachecontrol
 fnv-hash-fast==2.0.3
     # via homeassistant
@@ -168,39 +166,39 @@ frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-greenlet==3.5.5
+greenlet==3.5.6
     # via sqlalchemy
-grpcio==1.83.1
+grpcio==1.85.1
     # via hass-nabucasa
 h11==0.16.0
     # via
-    #   httpcore
+    #   httpcore2
     #   wsproto
-habluetooth==7.0.0
+habluetooth==7.1.2
     # via home-assistant-bluetooth
-hass-nabucasa==2.7.0
+hass-nabucasa==2.8.1
     # via homeassistant
 home-assistant-bluetooth==2.0.0
     # via homeassistant
-homeassistant==2026.9.0
+homeassistant==2026.11.0
     # via -r requirements-dev.in
-httpcore==1.0.9
-    # via httpx
-httpx==0.28.1
+httpcore2==2.14.0
+    # via httpx2
+httpx2==2.14.0
     # via homeassistant
 icmplib==3.0.4
     # via hass-nabucasa
-idna==3.19
+idna==3.20
     # via
     #   anyio
-    #   httpx
+    #   httpx2
     #   requests
     #   yarl
 ifaddr==0.2.0
     # via
     #   homeassistant
     #   zeroconf
-iniconfig==2.3.0
+iniconfig==2.3.1
     # via pytest
 jinja2==3.1.6
     # via homeassistant
@@ -214,7 +212,7 @@ josepy==2.2.0
     #   hass-nabucasa
 libcst==1.9.0
     # via mutmut
-librt==0.15.0
+librt==0.16.0
     # via mypy
 license-expression==30.4.4
     # via cyclonedx-python-lib
@@ -227,17 +225,17 @@ markdown-it-py[linkify]==4.2.0
     #   mdit-py-plugins
     #   rich
     #   textual
-markupsafe==3.0.3
+markupsafe==3.0.4
     # via jinja2
-mashumaro==3.22
+mashumaro==3.23
     # via webrtc-models
 mdit-py-plugins==0.6.1
     # via textual
 mdurl==0.1.2
     # via markdown-it-py
-msgpack==1.2.2
+msgpack==1.2.4
     # via cachecontrol
-multidict==6.8.0
+multidict==7.2.1
     # via
     #   aiohttp
     #   yarl
@@ -245,9 +243,9 @@ mutmut==3.6.0
     # via -r requirements-dev.in
 mypy==2.1.0
     # via -r requirements-dev.in
-mypy-extensions==1.1.0
+mypy-extensions==1.2.0
     # via mypy
-orjson==3.12.0
+orjson==3.13.0
     # via
     #   homeassistant
     #   webrtc-models
@@ -263,7 +261,7 @@ packaging==26.3
     #   wheel
 pathspec==1.1.1
     # via mypy
-pillow==12.3.0
+pillow==13.0.0
     # via homeassistant
 pip-api==0.0.35
     # via pip-audit
@@ -273,17 +271,17 @@ pip-requirements-parser==32.0.1
     # via pip-audit
 pip-tools==7.6.1
     # via -r requirements-dev.in
-platformdirs==4.11.8
+platformdirs==4.14.5
     # via
     #   pip-audit
     #   textual
-pluggy==1.6.0
+pluggy==1.7.0
     # via
     #   pytest
     #   pytest-cov
-probatio==0.11.4
+probatio==0.13.0
     # via homeassistant
-propcache==0.5.2
+propcache==0.5.4
     # via
     #   aiohttp
     #   annotatedyaml
@@ -293,13 +291,13 @@ psutil==7.2.2
     # via psutil-home-assistant
 psutil-home-assistant==0.0.1
     # via homeassistant
-py-serializable==2.1.0
+py-serializable==2.2.0
     # via cyclonedx-python-lib
-pycares==5.0.1
+pycares==5.2.1
     # via aiodns
 pycognito==2024.5.1
     # via hass-nabucasa
-pycparser==3.0
+pycparser==3.12
     # via cffi
 pydantic==2.13.4
     # via -r requirements-dev.in
@@ -310,27 +308,29 @@ pygments==2.21.0
     #   pytest
     #   rich
     #   textual
-pyjwt[crypto]==2.13.0
+pyjwt[crypto]==2.15.1
     # via
     #   hass-nabucasa
     #   homeassistant
     #   pycognito
 pynacl==1.6.2
     # via securetar
-pyopenssl==26.2.0
+pyopenssl==26.4.0
     # via
     #   acme
     #   homeassistant
-pyparsing==3.3.2
+pyparsing==3.3.3
     # via pip-requirements-parser
-pyproject-hooks==1.2.0
+pyproject-hooks==1.3.3
     # via
     #   build
     #   pip-tools
-pyrfc3339==2.1.0
+pyrfc3339==2.1.1
     # via acme
 pyric==0.1.6.3
     # via bluetooth-auto-recovery
+pyserial==3.5
+    # via homeassistant
 pytest==9.1.1
     # via
     #   -r requirements-dev.in
@@ -344,20 +344,20 @@ pytest-cov==7.1.0
     # via -r requirements-dev.in
 python-dateutil==2.9.0.post0
     # via botocore
-python-engineio==4.14.0
+python-engineio==4.15.1
     # via python-socketio
-python-slugify==8.0.4
+python-slugify==9.1.3
     # via homeassistant
 python-socketio==5.16.3
     # via -r requirements-dev.in
-pytz==2026.3.post1
+pytz==2026.6
     # via astral
 pyyaml==6.0.3
     # via
     #   annotatedyaml
     #   homeassistant
     #   libcst
-regex==2026.9.10
+regex==2026.11.7
     # via sentence-stream
 requests==2.34.2
     # via
@@ -373,13 +373,13 @@ rich==15.0.0
     #   textual
 ruff==0.15.20
     # via -r requirements-dev.in
-s3transfer==0.19.2
+s3transfer==0.19.3
     # via boto3
-securetar==2026.4.1
+securetar==2026.10.0
     # via homeassistant
-sentence-stream==1.3.0
+sentence-stream==1.4.0
     # via hass-nabucasa
-setproctitle==1.3.7
+setproctitle==1.3.8
     # via mutmut
 simple-websocket==1.1.0
     # via python-engineio
@@ -389,7 +389,7 @@ snitun==0.47.0
     # via hass-nabucasa
 sortedcontainers==2.4.0
     # via cyclonedx-python-lib
-sqlalchemy==2.0.52
+sqlalchemy==2.0.54
     # via homeassistant
 standard-aifc==3.13.0
     # via homeassistant
@@ -405,10 +405,15 @@ textual==8.2.7
     # via
     #   -r requirements-dev.in
     #   mutmut
-tomli==2.4.1
+tomli==2.5.0
     # via pip-audit
 tomli-w==1.2.0
     # via pip-audit
+truststore==0.10.4
+    # via
+    #   homeassistant
+    #   httpcore2
+    #   httpx2
 types-pyyaml==6.0.12.20260518
     # via -r requirements-dev.in
 typing-extensions==4.16.0
@@ -423,15 +428,15 @@ typing-extensions==4.16.0
     #   sqlalchemy
     #   textual
     #   typing-inspection
-typing-inspection==0.4.4
+typing-inspection==0.4.5
     # via pydantic
-tzdata==2026.3
+tzdata==2026.6
     # via aiozoneinfo
 uart-devices==0.1.1
     # via bluetooth-adapters
 ulid-transform==2.2.9
     # via homeassistant
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   botocore
     #   homeassistant
@@ -440,7 +445,7 @@ usb-devices==0.5.1
     # via
     #   bluetooth-adapters
     #   bluetooth-auto-recovery
-uv==0.12.5
+uv==0.13.6
     # via homeassistant
 voluptuous==0.16.0
     # via
@@ -454,12 +459,12 @@ wheel==0.48.0
     # via pip-tools
 wsproto==1.3.2
     # via simple-websocket
-yarl==1.24.5
+yarl==1.25.1
     # via
     #   aiohttp
     #   hass-nabucasa
     #   homeassistant
-zeroconf==0.151.1
+zeroconf==0.152.0
     # via
     #   aiohttp-asyncmdnsresolver
     #   homeassistant
